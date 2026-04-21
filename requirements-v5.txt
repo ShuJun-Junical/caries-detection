@@ -1,0 +1,3 @@
+-r third_party/yolov5/requirements.txt
+pyyaml>=6.0
+opencv-python>=4.8.0

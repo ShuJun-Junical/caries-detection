@@ -1,0 +1,10 @@
+[project]
+name = "caries-detection"
+version = "0.1.0"
+description = "Training scripts for caries detection with YOLOv5/v8/v11/latest"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.uv]
+package = false

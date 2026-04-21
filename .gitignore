@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+.venv-*/
+
+# Training artifacts
+runs/
+logs/
+checkpoints/
+wandb/
+mlruns/
+events.out.tfevents*
+
+# Model artifacts
+*.pt
+*.onnx
+*.engine
+*.torchscript
+
+# Dataset archives and downloads
+dataset.zip
+dataset/
+*.tar
+*.tar.gz
+wget-log
+
+# IDE/OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
