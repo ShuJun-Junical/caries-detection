@@ -16,12 +16,29 @@ ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-v5}"
 YOLOV5_DIR="${YOLOV5_DIR:-$ROOT_DIR/third_party/yolov5}"
 CFG="${CFG:-configs/models.yaml}"
+DEVICE="${DEVICE:-auto}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-7}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
 export MIN_CC_MAJOR MIN_CC_MINOR
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
+
+if [[ -z "${WORKERS:-}" ]]; then
+  WORKERS=$SLURM_CPUS_PER_TASK
+fi
+
+if [[ "$DEVICE" == "auto" ]]; then
+  gpu_count="${SLURM_GPUS_ON_NODE:-}"
+  if [[ -z "$gpu_count" ]] && command -v nvidia-smi >/dev/null 2>&1; then
+    gpu_count=$(nvidia-smi -L | wc -l)
+  fi
+  if [[ -n "$gpu_count" ]] && [[ "$gpu_count" -gt 1 ]]; then
+    DEVICE=$(seq -s, 0 $((gpu_count - 1)))
+  else
+    DEVICE=0
+  fi
+fi
 
 python - <<'PY'
 import os
@@ -40,7 +57,9 @@ PY
 
 cmd=(python -m scripts.train.train_yolov5
   --yolov5-dir "$YOLOV5_DIR"
-  --cfg "$CFG"
+  --config "$CFG"
+  --device "$DEVICE"
+  --workers "$WORKERS"
 )
 
 srun "${cmd[@]}"

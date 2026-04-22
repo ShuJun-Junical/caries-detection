@@ -24,14 +24,11 @@ def parse_args() -> argparse.Namespace:
         default=["v5", "v8", "v11", "latest"],
         choices=["v5", "v8", "v11", "latest"],
     )
-    parser.add_argument("--epochs", type=int, default=1, help="Use small value for smoke tests")
+    parser.add_argument("--config", default="configs/models.yaml", help="Path to the consolidated model YAML")
+    parser.add_argument("--device", required=True, help="Training device setting passed to the target scripts")
+    parser.add_argument("--workers", type=int, required=True, help="Dataloader worker count passed to the target scripts")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--yolov5-dir", default="third_party/yolov5")
-    parser.add_argument(
-        "--use-attention",
-        action="store_true",
-        help="Enable attention mechanism for supported training targets.",
-    )
     return parser.parse_args()
 
 
@@ -48,8 +45,12 @@ def main() -> int:
                 "scripts.train.train_yolov5",
                 "--yolov5-dir",
                 args.yolov5_dir,
-                "--epochs",
-                str(args.epochs),
+                "--config",
+                args.config,
+                "--device",
+                args.device,
+                "--workers",
+                str(args.workers),
             ]
         else:
             cmd = [
@@ -58,15 +59,16 @@ def main() -> int:
                 "scripts.train.train_ultralytics",
                 "--family",
                 target,
-                "--epochs",
-                str(args.epochs),
+                "--config",
+                args.config,
+                "--device",
+                args.device,
+                "--workers",
+                str(args.workers),
             ]
 
-        if args.use_attention:
-            cmd.append("--use-attention")
-
         if args.dry_run:
-            cmd.append("--dry-run") if target != "v5" else None
+            cmd.append("--dry-run")
 
         code = run_cmd(cmd, args.dry_run)
         if code != 0:

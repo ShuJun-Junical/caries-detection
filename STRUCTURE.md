@@ -15,30 +15,30 @@ This document explains the role of each major directory and key files.
   - `io_utils.py`: shared helpers for YAML loading, config merge, path handling, and timestamp tags.
   - (moved) `dataset_filters.py`: functionality moved to `tools/prepare_caries_only_data.py`; builds temporary training dataset views (for example, caries-only filtering) without modifying original dataset files.
 - `scripts/train/`
-  - `train_ultralytics.py`: train entry for v8, v11, latest. Default ignores class `other` (id=1); pass `--keep-others` to disable filtering. Pass `--use-attention` to inject CBAM attention blocks.
-  - `train_yolov5.py`: train entry for local YOLOv5 clone. Default ignores class `other` (id=1); pass `--keep-others` to disable filtering. Pass `--use-attention` to switch to `yolov5s-transformer.yaml` (C3TR).
-  - `run_all.py`: sequential smoke run across selected model families, supports `--keep-others` and `--use-attention` passthrough.
+  - `train_ultralytics.py`: train entry for v8, v11, latest. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies family plus device/workers.
+  - `train_yolov5.py`: train entry for local YOLOv5 clone. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies device/workers.
+  - `run_all.py`: sequential smoke run across selected model families, forwarding config plus device/workers.
 - `scripts/eval/`
   - `compare_test_models.py`: evaluate and compare metrics across model families, generate CSV and chart.
 - `scripts/slurm/`
-  - `train_ultralytics.sbatch`: Ultralytics training on standard GPU nodes. Slurm wrappers focus on device/venv/family; training-related flags (e.g. `use_attention`, `workers`) are read from the consolidated YAML (`configs/models.yaml`) or passed via the training CLI when running directly.
-  - `train_ultralytics_p100.sbatch`: Ultralytics training for P100-compatible environment. Slurm wrappers focus on device/venv/family; training-related flags are configured in YAML or via CLI.
-  - `train_yolov5.sbatch`: YOLOv5 training on standard GPU nodes. Slurm wrappers focus on device/venv; configure training flags in YAML or via CLI.
-  - `train_yolov5_p100.sbatch`: YOLOv5 training for P100-compatible environment. Slurm wrappers focus on device/venv; configure training flags in YAML or via CLI.
+  - `train_ultralytics.sbatch`: Ultralytics training on standard GPU nodes. Slurm wrappers focus on device/venv/family and pass the required device/workers settings.
+  - `train_ultralytics_p100.sbatch`: Ultralytics training for P100-compatible environment. Slurm wrappers focus on device/venv/family and pass the required device/workers settings.
+  - `train_yolov5.sbatch`: YOLOv5 training on standard GPU nodes. Slurm wrappers focus on device/venv and pass the required device/workers settings.
+  - `train_yolov5_p100.sbatch`: YOLOv5 training for P100-compatible environment. Slurm wrappers focus on device/venv and pass the required device/workers settings.
   - `submit_examples.sh`: sample batch submission helper.
 
 ## Config and Data
 - `configs/`
-  - `data.caries.yaml`: dataset root, split paths, and class names.
   - `models.yaml`: consolidated per-family model defaults (preferred). Contains subsections `yolov5`, `yolov8`, `yolov11`, `latest` with only model-specific overrides (checkpoint, data, project/name, and family-specific flags).
   - Legacy per-family files (kept for compatibility): `models.yolov8.yaml`, `models.yolov11.yaml`, `models.latest.yaml`, `models.yolov5.yaml`, `models.yolov5.p100.yaml`.
 - `dataset/`
+  - `data.caries.yaml`: dataset root, split paths, and class names.
+  - `caries_only/data.caries_only.generated.yaml`: generated single-class dataset view used by families that point at it in `configs/models.yaml`.
   - `train/`, `val/`, `test/` with `images/` and `labels/` in YOLO format.
 
 ## Runtime and Artifacts
 - `checkpoints/`: local initial checkpoints for training starts.
 - `runs/`: generated training/evaluation outputs.
-  - `runs/tmp_data/caries_only/`: auto-generated temporary single-class dataset view used by default training wrappers.
 - `logs/`: runtime logs, especially Slurm stdout/stderr in `logs/slurm/`.
 
 ## Tooling and Vendor Code

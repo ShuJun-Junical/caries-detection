@@ -16,7 +16,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
-from scripts.common.io_utils import ROOT, ensure_dir
+from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
+
+MODELS_CFG_PATH = "configs/models.yaml"
 
 
 @dataclass(frozen=True)
@@ -37,17 +39,17 @@ def parse_args() -> argparse.Namespace:
         choices=["v5", "v8", "v11", "latest"],
         help="Model families to evaluate",
     )
-    parser.add_argument("--data", default="configs/data.caries.yaml")
+    parser.add_argument("--data", default="dataset/data.caries.yaml")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"])
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
     parser.add_argument("--device", default="0")
     parser.add_argument("--yolov5-dir", default="third_party/yolov5")
     parser.add_argument("--output-dir", default="runs/test_compare")
-    parser.add_argument("--v5-weights", default="runs/yolov5/weights/best.pt")
-    parser.add_argument("--v8-weights", default="runs/v8/weights/best.pt")
-    parser.add_argument("--v11-weights", default="runs/v11/weights/best.pt")
-    parser.add_argument("--latest-weights", default="runs/latest/weights/best.pt")
+    parser.add_argument("--v5-weights", default=None)
+    parser.add_argument("--v8-weights", default=None)
+    parser.add_argument("--v11-weights", default=None)
+    parser.add_argument("--latest-weights", default=None)
     return parser.parse_args()
 
 
@@ -56,6 +58,17 @@ def resolve_path(path: str | Path) -> Path:
     if not resolved.is_absolute():
         resolved = ROOT / resolved
     return resolved
+
+
+def default_weight_path(models_cfg: dict[str, Any], family_key: str) -> Path:
+    family_cfg = models_cfg.get(family_key)
+    if not isinstance(family_cfg, dict):
+        raise KeyError(f"Missing family config: {family_key}")
+    project = family_cfg.get("project")
+    name = family_cfg.get("name")
+    if not project or not name:
+        raise KeyError(f"Missing project/name for family config: {family_key}")
+    return resolve_path(Path(project) / name / "weights" / "best.pt")
 
 
 def to_float(value: Any) -> float:
@@ -178,18 +191,19 @@ def plot_metrics(rows: list[dict[str, Any]], fig_path: Path, split: str) -> None
 def main() -> int:
     args = parse_args()
 
+    models_cfg = load_yaml(MODELS_CFG_PATH)
     data = resolve_path(args.data)
     output_dir = ensure_dir(args.output_dir)
 
     specs: list[ModelSpec] = []
     if "v5" in args.models:
-        specs.append(ModelSpec("v5", "yolov5", resolve_path(args.v5_weights)))
+        specs.append(ModelSpec("v5", "yolov5", resolve_path(args.v5_weights) if args.v5_weights else default_weight_path(models_cfg, "yolov5")))
     if "v8" in args.models:
-        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights)))
+        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else default_weight_path(models_cfg, "yolov8")))
     if "v11" in args.models:
-        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights)))
+        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else default_weight_path(models_cfg, "yolov11")))
     if "latest" in args.models:
-        specs.append(ModelSpec("latest", "ultralytics", resolve_path(args.latest_weights)))
+        specs.append(ModelSpec("latest", "ultralytics", resolve_path(args.latest_weights) if args.latest_weights else default_weight_path(models_cfg, "latest")))
 
     yolov5_run = None
     if any(spec.kind == "yolov5" for spec in specs):

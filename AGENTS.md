@@ -32,27 +32,37 @@ This file defines project-specific rules for AI assistants working in this repos
 
 ## 5) Training Entry Points
 - Ultralytics training:
-  - `python -m scripts.train.train_ultralytics --family v8|v11|latest`
+  - `python -m scripts.train.train_ultralytics --family v8|v11|latest --device 0 --workers 8`
 - YOLOv5 training:
-  - `python -m scripts.train.train_yolov5 --yolov5-dir third_party/yolov5`
+  - `python -m scripts.train.train_yolov5 --yolov5-dir third_party/yolov5 --device 0 --workers 8`
 - Multi-target smoke run:
-  - `python -m scripts.train.run_all --targets v5 v8 v11 latest --epochs 1`
+  - `python -m scripts.train.run_all --targets v5 v8 v11 latest --device 0 --workers 8`
 
 ## 6) Evaluation Entry Point
 - Compare test metrics across families:
   - `python -m scripts.eval.compare_test_models --models v5 v8 v11 latest`
 
 ## 7) Slurm Rules
-Training controls such as `use_attention`, `workers`, `epochs`, `imgsz`, etc. should be set in the top-level of `configs/models.yaml` or the per-family section of `configs/models.yaml`, or passed directly to the training module via CLI when running outside the Slurm wrapper.
+Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`, and `name` should be set in the top-level of `configs/models.yaml` or the per-family section of `configs/models.yaml`. `device` and `workers` are supplied by the training CLI or Slurm wrapper.
+
+### Parameter Control Matrix (Single Source of Truth)
+- Config-only (do not expose as training CLI overrides):
+  - `epochs`, `imgsz`, `batch`, `patience`, `optimizer`, `lr0`, `weight_decay`, `cache`, `use_attention`
+  - per-family: `model`, `data`, `project`, `name`, `amp`
+- CLI/Slurm runtime-only:
+  - `device`, `workers`
+  - `family` (Ultralytics selector), `yolov5-dir` (YOLOv5 repo path), `config` (`CFG` in Slurm)
+- Enforcement rule:
+  - Do not add the same parameter to both config and training CLI. If a new parameter is added, choose one control plane only.
 
 ## 8) Data Rules
-- Dataset config: `configs/data.caries.yaml`.
+- Dataset config: `dataset/data.caries.yaml`.
 - Required split structure:
   - `dataset/train/images`, `dataset/train/labels`
   - `dataset/val/images`, `dataset/val/labels`
   - `dataset/test/images`, `dataset/test/labels`
 - Validate data integrity before major training runs:
-  - `python tools/check_dataset.py --data configs/data.caries.yaml`
+  - `python tools/check_dataset.py --data dataset/data.caries.yaml`
 
 ## 9) Editing Rules For Agents
 - Keep changes minimal and scoped to the user request.
@@ -74,8 +84,8 @@ Training controls such as `use_attention`, `workers`, `epochs`, `imgsz`, etc. sh
 
 ## 12) Recommended Execution Workflow
 - Before Slurm submission, run a lightweight local validation:
-  - `python tools/check_dataset.py --data configs/data.caries.yaml`
+  - `python tools/check_dataset.py --data dataset/data.caries.yaml`
 - For script changes, run `--dry-run` when available.
 - For Slurm, submit with explicit overrides when testing:
-  - `FAMILY=v11 EPOCHS=1 sbatch scripts/slurm/train_ultralytics.sbatch`
+  - `FAMILY=v11 DEVICE=0 WORKERS=8 sbatch scripts/slurm/train_ultralytics.sbatch`
 - Store final behavior in `configs/*.yaml`; keep ad-hoc experiments out of source files.

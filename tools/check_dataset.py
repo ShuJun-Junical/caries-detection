@@ -99,7 +99,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Check YOLO dataset integrity")
     parser.add_argument(
         "--data",
-        default="configs/data.caries.yaml",
+        default="dataset/data.caries.yaml",
         help="Path to data yaml",
     )
     parser.add_argument(

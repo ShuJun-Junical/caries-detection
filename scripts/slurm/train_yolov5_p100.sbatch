@@ -15,9 +15,14 @@ ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-v5-p100}"
 YOLOV5_DIR="${YOLOV5_DIR:-$ROOT_DIR/third_party/yolov5}"
 CFG="${CFG:-configs/models.yaml}"
+DEVICE="${DEVICE:-0}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-6}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
 export MIN_CC_MAJOR MIN_CC_MINOR
+
+if [[ -z "${WORKERS:-}" ]]; then
+    WORKERS=$SLURM_CPUS_PER_TASK
+fi
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -40,7 +45,9 @@ PY
 
 cmd=(python -m scripts.train.train_yolov5
     --yolov5-dir "$YOLOV5_DIR"
-    --cfg "$CFG"
+    --config "$CFG"
+    --device "$DEVICE"
+    --workers "$WORKERS"
 )
 
 srun "${cmd[@]}"

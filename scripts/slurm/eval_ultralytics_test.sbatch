@@ -21,13 +21,8 @@ DEVICE="${DEVICE:-0}"
 SPLIT="${SPLIT:-test}"
 IMGSZ="${IMGSZ:-640}"
 BATCH="${BATCH:-16}"
-DATA="${DATA:-configs/data.caries.yaml}"
+DATA="${DATA:-dataset/data.caries.yaml}"
 OUT_ROOT="${OUT_ROOT:-runs/test_compare}"
-
-# Use explicit best.pt paths to avoid picking stale runs.
-V8_WEIGHTS="${V8_WEIGHTS:-runs/v8/caries-v8-20260421-042206/weights/best.pt}"
-V11_WEIGHTS="${V11_WEIGHTS:-runs/v11/caries-v11-20260421-042206/weights/best.pt}"
-LATEST_WEIGHTS="${LATEST_WEIGHTS:-runs/latest/caries-latest-20260421-042209/weights/best.pt}"
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -50,9 +45,6 @@ cmd=(python -m scripts.eval.compare_test_models
   --batch "$BATCH"
   --device "$DEVICE"
   --output-dir "$OUT_ROOT/$MODEL"
-  --v8-weights "$V8_WEIGHTS"
-  --v11-weights "$V11_WEIGHTS"
-  --latest-weights "$LATEST_WEIGHTS"
 )
 
 echo "Running: ${cmd[*]}"

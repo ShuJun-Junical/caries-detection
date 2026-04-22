@@ -14,6 +14,7 @@ set -euo pipefail
 
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
+CFG="${CFG:-configs/models.yaml}"
 FAMILY="${FAMILY:-v8}"
 DEVICE="${DEVICE:-auto}"
 ULTRALYTICS_DDP_BACKEND="${ULTRALYTICS_DDP_BACKEND:-gloo}"
@@ -44,6 +45,13 @@ if [[ -z "$GPU_COUNT" ]]; then
   fi
 fi
 
+if [[ -z "${WORKERS:-}" ]]; then
+  WORKERS=$(( SLURM_CPUS_PER_TASK / GPU_COUNT ))
+  if [[ "$WORKERS" -lt 1 ]]; then
+    WORKERS=1
+  fi
+fi
+
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -64,14 +72,9 @@ if (major, minor) < (min_cc_major, min_cc_minor):
 PY
 
 cmd=(python -m scripts.train.train_ultralytics
+  --config "$CFG"
   --family "$FAMILY"
   --device "$DEVICE"
+  --workers "$WORKERS"
 )
-
-# If a DATA env var is provided when submitting the job, forward it to the
-# training script as `--data` so the training entrypoint receives an explicit
-# dataset path (avoids missing-data failures when models.yaml doesn't include it).
-if [[ -n "${DATA:-}" ]]; then
-  cmd+=(--data "$DATA")
-fi
 srun "${cmd[@]}"

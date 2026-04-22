@@ -13,6 +13,7 @@ set -euo pipefail
 
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra-p100}"
+CFG="${CFG:-configs/models.yaml}"
 FAMILY="${FAMILY:-v8}"
 DEVICE="${DEVICE:-0}"
 ULTRALYTICS_DDP_BACKEND="${ULTRALYTICS_DDP_BACKEND:-gloo}"
@@ -20,6 +21,10 @@ MIN_CC_MAJOR="${MIN_CC_MAJOR:-6}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
 export ULTRALYTICS_DDP_BACKEND
 export MIN_CC_MAJOR MIN_CC_MINOR
+
+if [[ -z "${WORKERS:-}" ]]; then
+  WORKERS=$SLURM_CPUS_PER_TASK
+fi
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -41,8 +46,10 @@ if (major, minor) < (min_cc_major, min_cc_minor):
 PY
 
 cmd=(python -m scripts.train.train_ultralytics
+  --config "$CFG"
   --family "$FAMILY"
   --device "$DEVICE"
+  --workers "$WORKERS"
 )
 
 srun "${cmd[@]}"
