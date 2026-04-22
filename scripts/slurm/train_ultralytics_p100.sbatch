@@ -5,8 +5,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
-#SBATCH --output=logs/slurm/%x-%j.out
-#SBATCH --error=logs/slurm/%x-%j.err
+#SBATCH --output=logs/slurm/%j-%x.out
+#SBATCH --error=logs/slurm/%j-%x.err
 #SBATCH --chdir=/home/junical/caries-detection
 
 set -euo pipefail
@@ -14,24 +14,12 @@ set -euo pipefail
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra-p100}"
 FAMILY="${FAMILY:-v8}"
-MODEL="${MODEL:-}"
-DATA="${DATA:-configs/data.caries.yaml}"
-EPOCHS="${EPOCHS:-100}"
-IMGSZ="${IMGSZ:-640}"
-BATCH="${BATCH:--1}"
 DEVICE="${DEVICE:-0}"
-WORKERS="${WORKERS:-}"
-PROJECT="${PROJECT:-runs/${FAMILY}-p100}"
-NAME="${NAME:-caries-${FAMILY}-p100-$(date +%Y%m%d-%H%M%S)}"
 ULTRALYTICS_DDP_BACKEND="${ULTRALYTICS_DDP_BACKEND:-gloo}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-6}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
 export ULTRALYTICS_DDP_BACKEND
-
-if [[ -z "$WORKERS" ]]; then
-  total_cpus="${SLURM_CPUS_PER_TASK:-8}"
-  WORKERS="$total_cpus"
-fi
+export MIN_CC_MAJOR MIN_CC_MINOR
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -54,18 +42,7 @@ PY
 
 cmd=(python -m scripts.train.train_ultralytics
   --family "$FAMILY"
-  --data "$DATA"
-  --epochs "$EPOCHS"
-  --imgsz "$IMGSZ"
-  --batch "$BATCH"
   --device "$DEVICE"
-  --workers "$WORKERS"
-  --project "$PROJECT"
-  --name "$NAME"
 )
-
-if [[ -n "$MODEL" ]]; then
-  cmd+=(--model "$MODEL")
-fi
 
 srun "${cmd[@]}"

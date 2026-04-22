@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Evaluate multiple model families on one split and export comparable metrics."""
+
 import argparse
 import csv
 import sys

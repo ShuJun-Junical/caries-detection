@@ -1,9 +1,0 @@
-model: yolov5s.pt
-epochs: 100
-imgsz: 640
-batch: 16
-device: "0"
-workers: 8
-cache: false
-project: runs/yolov5
-name: caries-yolov5

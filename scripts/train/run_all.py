@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Run selected training families sequentially for smoke testing."""
+
 import argparse
 import subprocess
 from pathlib import Path
@@ -15,7 +17,7 @@ def run_cmd(cmd: list[str], dry_run: bool) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run YOLOv5/v8/v11/latest training in sequence")
+    parser = argparse.ArgumentParser(description="Run YOLOv5/v8/v11/latest training targets in sequence")
     parser.add_argument(
         "--targets",
         nargs="+",
@@ -25,6 +27,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--epochs", type=int, default=1, help="Use small value for smoke tests")
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--yolov5-dir", default="third_party/yolov5")
+    parser.add_argument(
+        "--use-attention",
+        action="store_true",
+        help="Enable attention mechanism for supported training targets.",
+    )
     return parser.parse_args()
 
 
@@ -54,6 +61,9 @@ def main() -> int:
                 "--epochs",
                 str(args.epochs),
             ]
+
+        if args.use_attention:
+            cmd.append("--use-attention")
 
         if args.dry_run:
             cmd.append("--dry-run") if target != "v5" else None

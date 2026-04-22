@@ -6,8 +6,8 @@
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=32G
 #SBATCH --time=08:00:00
-#SBATCH --output=logs/slurm/%x-%j.out
-#SBATCH --error=logs/slurm/%x-%j.err
+#SBATCH --output=logs/slurm/%j-%x.out
+#SBATCH --error=logs/slurm/%j-%x.err
 #SBATCH --chdir=/home/junical/caries-detection
 
 set -euo pipefail
@@ -15,18 +15,10 @@ set -euo pipefail
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-v5}"
 YOLOV5_DIR="${YOLOV5_DIR:-$ROOT_DIR/third_party/yolov5}"
-WEIGHTS="${WEIGHTS:-yolov5s.pt}"
-DATA="${DATA:-configs/data.caries.yaml}"
-CFG="${CFG:-configs/models.yolov5.yaml}"
-HYP="${HYP:-configs/hyp.base.yaml}"
-EPOCHS="${EPOCHS:-100}"
-IMGSZ="${IMGSZ:-640}"
-BATCH="${BATCH:-16}"
-DEVICE="${DEVICE:-0}"
-PROJECT="${PROJECT:-runs/yolov5}"
-NAME="${NAME:-caries-yolov5-$(date +%Y%m%d-%H%M%S)}"
+CFG="${CFG:-configs/models.yaml}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-7}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
+export MIN_CC_MAJOR MIN_CC_MINOR
 
 cd "$ROOT_DIR"
 source "$VENV_DIR/bin/activate"
@@ -46,15 +38,9 @@ if (major, minor) < (min_cc_major, min_cc_minor):
   raise SystemExit(f"Allocated GPU has CC {major}.{minor}, which is below the required CC {min_cc_major}.{min_cc_minor} for this environment.")
 PY
 
-srun python -m scripts.train.train_yolov5 \
-  --yolov5-dir "$YOLOV5_DIR" \
-  --weights "$WEIGHTS" \
-  --data "$DATA" \
-  --cfg "$CFG" \
-  --hyp "$HYP" \
-  --epochs "$EPOCHS" \
-  --img "$IMGSZ" \
-  --batch "$BATCH" \
-  --device "$DEVICE" \
-  --project "$PROJECT" \
-  --name "$NAME"
+cmd=(python -m scripts.train.train_yolov5
+  --yolov5-dir "$YOLOV5_DIR"
+  --cfg "$CFG"
+)
+
+srun "${cmd[@]}"
