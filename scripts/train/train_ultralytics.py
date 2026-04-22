@@ -56,7 +56,12 @@ def main() -> int:
         base_cfg = load_yaml(args.hyp)
     else:
         base_cfg = {k: v for k, v in all_models.items() if k not in FAMILY_KEYS}
-    model_cfg = all_models.get(args.family, {})
+    # Map CLI family names like 'v8'/'v11' to keys in `configs/models.yaml`
+    # which use names like 'yolov8'/'yolov11'. Leave 'latest' as-is.
+    fam_key = args.family
+    if isinstance(fam_key, str) and fam_key.startswith("v"):
+        fam_key = f"yolo{fam_key[1:]}"
+    model_cfg = all_models.get(fam_key, {})
 
     cli_cfg = {
         "model": args.model,
@@ -141,9 +146,16 @@ def main() -> int:
         print(cfg)
         return 0
 
+    # Determine whether to inject attention. Prefer explicit CLI flag, otherwise
+    # fall back to the `use_attention` key from config. Remove the key from
+    # `cfg` so it is not passed to Ultralytics' `model.train` (Ultralytics
+    # rejects unknown kwargs).
+    use_attention_cfg = cfg.pop("use_attention", False)
+    use_attention_flag = args.use_attention or bool(use_attention_cfg)
+
     model_path = cfg.pop("model")
     model = YOLO(model_path)
-    if args.use_attention:
+    if use_attention_flag:
         injected = inject_cbam_attention(model.model, max_blocks=args.attention_max_blocks)
         if injected < 1:
             raise RuntimeError(

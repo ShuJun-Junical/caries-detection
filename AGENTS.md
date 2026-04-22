@@ -13,6 +13,7 @@ This file defines project-specific rules for AI assistants working in this repos
 - `scripts/eval/`: model comparison and evaluation scripts.
 - `scripts/slurm/`: Slurm submit scripts.
 - `tools/`: dataset and distributed environment checks.
+  - `prepare_caries_only_data.py`: build a temporary single-class (caries-only) dataset view; replaces `scripts/common/dataset_filters.py` and `scripts/train/prepare_caries_only_data.py`.
 - `third_party/yolov5/`: upstream YOLOv5 codebase (vendor code).
 - `runs/` and `logs/`: runtime artifacts (not source of truth).
 

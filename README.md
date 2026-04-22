@@ -17,6 +17,7 @@ Training and evaluation workflows for dental caries detection across YOLOv5, YOL
 - scripts/eval: evaluation and comparison scripts
 - scripts/slurm: Slurm submit wrappers
 - tools: dataset and distributed environment checks
+- tools: dataset and distributed environment checks (see `tools/prepare_caries_only_data.py` for building a caries-only dataset view)
 - checkpoints: local starter weights
 - third_party/yolov5: upstream vendor code
 
@@ -56,6 +57,14 @@ Recommended order before long runs:
 
 ```bash
 make dataset-check
+```
+
+### Build caries-only dataset view
+
+Before training, you can create the single-class dataset view with:
+
+```bash
+python tools/prepare_caries_only_data.py --data configs/data.caries.yaml --out-dir dataset/caries_only
 ```
 
 ### Training Commands

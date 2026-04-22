@@ -68,4 +68,10 @@ cmd=(python -m scripts.train.train_ultralytics
   --device "$DEVICE"
 )
 
+# If a DATA env var is provided when submitting the job, forward it to the
+# training script as `--data` so the training entrypoint receives an explicit
+# dataset path (avoids missing-data failures when models.yaml doesn't include it).
+if [[ -n "${DATA:-}" ]]; then
+  cmd+=(--data "$DATA")
+fi
 srun "${cmd[@]}"

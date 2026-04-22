@@ -13,7 +13,7 @@ This document explains the role of each major directory and key files.
 ## Source Directories
 - `scripts/common/`
   - `io_utils.py`: shared helpers for YAML loading, config merge, path handling, and timestamp tags.
-  - `dataset_filters.py`: builds temporary training dataset views (for example, caries-only filtering) without modifying original dataset files.
+  - (moved) `dataset_filters.py`: functionality moved to `tools/prepare_caries_only_data.py`; builds temporary training dataset views (for example, caries-only filtering) without modifying original dataset files.
 - `scripts/train/`
   - `train_ultralytics.py`: train entry for v8, v11, latest. Default ignores class `other` (id=1); pass `--keep-others` to disable filtering. Pass `--use-attention` to inject CBAM attention blocks.
   - `train_yolov5.py`: train entry for local YOLOv5 clone. Default ignores class `other` (id=1); pass `--keep-others` to disable filtering. Pass `--use-attention` to switch to `yolov5s-transformer.yaml` (C3TR).
@@ -43,6 +43,7 @@ This document explains the role of each major directory and key files.
 
 ## Tooling and Vendor Code
 - `tools/`
+  - `prepare_caries_only_data.py`: CLI/tool to create a temporary single-class (caries-only) dataset view; replaces `scripts/common/dataset_filters.py` and `scripts/train/prepare_caries_only_data.py`.
   - `check_dataset.py`: dataset integrity and label format checks.
   - `ddp_test.py`, `ddp_gloo_test.py`, `ddp_gloo_cuda_test.py`: distributed environment probes.
 - `third_party/yolov5/`: vendored upstream YOLOv5 code, treated as external source.
