@@ -5,8 +5,8 @@
 
 # Shared training defaults (merged from hyp.base.yaml)
 epochs: 100
-imgsz: 640
-batch: 16
+imgsz: 512
+batch: 64
 
 # Optimization defaults
 patience: 30
@@ -15,7 +15,7 @@ lr0: 0.01
 weight_decay: 0.0005
 
 # Runtime outputs
-cache: false
+cache: ram
 project: runs
 use_attention: true
 
@@ -44,4 +44,4 @@ latest:
   data: dataset/caries_only/data.caries_only.generated.yaml
   project: runs/latest
   name: caries-latest
-  amp: false
+  amp: true

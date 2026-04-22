@@ -15,11 +15,12 @@ set -euo pipefail
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
 CFG="${CFG:-configs/models.yaml}"
-FAMILY="${FAMILY:-v8}"
+FAMILY="${FAMILY:-latest}"
 DEVICE="${DEVICE:-auto}"
 ULTRALYTICS_DDP_BACKEND="${ULTRALYTICS_DDP_BACKEND:-gloo}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-7}"
 MIN_CC_MINOR="${MIN_CC_MINOR:-0}"
+WORKERS="${WORKERS:-16}"
 export ULTRALYTICS_DDP_BACKEND
 export MIN_CC_MAJOR MIN_CC_MINOR
 
