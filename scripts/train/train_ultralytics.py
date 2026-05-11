@@ -29,7 +29,7 @@ def main() -> int:
 
     all_models = load_yaml(args.config)
     base_cfg = {k: v for k, v in all_models.items() if k not in FAMILY_KEYS}
-    fam_key = f"yolo{args.family[1:]}" if args.family.startswith("v") else args.family
+    fam_key = f"yolov{args.family[1:]}" if args.family.startswith("v") else args.family
     model_cfg = all_models.get(fam_key)
     if model_cfg is None:
         raise KeyError(f"Missing family section in model config: {fam_key}")

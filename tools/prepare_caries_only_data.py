@@ -67,7 +67,7 @@ def _write_split_view(
     dst_images_dir: Path,
     dst_labels_dir: Path,
     *,
-    keep_class_id: int,
+    keep_class_ids: set[int],
     image_prefix: str = "",
     clear_existing: bool = True,
     selected_image_stems: set[str] | None = None,
@@ -96,7 +96,7 @@ def _write_split_view(
 
         for line in raw.splitlines():
             class_id = _class_id_from_line(line)
-            if class_id is None or class_id != keep_class_id:
+            if class_id is None or class_id not in keep_class_ids:
                 continue
 
             parts = line.split()
@@ -113,7 +113,7 @@ def _write_split_view(
 
 def build_caries_only_data_yaml(
     data_yaml: str | Path,
-    keep_class_id: int = 0,
+    keep_class_ids: set[int] | None = None,
     out_dir: str | Path = "runs/tmp_data/caries_only",
 ) -> Path:
     """Create a temporary single-class dataset view for training.
@@ -125,6 +125,9 @@ def build_caries_only_data_yaml(
     data_yaml_path = _resolve_data_yaml_path(data_yaml)
     cfg = load_yaml(data_yaml_path)
     dataset_root = _resolve_dataset_root(cfg, data_yaml_path)
+
+    if keep_class_ids is None:
+        keep_class_ids = {0}
 
     mix_flag, ratio = _parse_mix_spec(dataset_version)
 
@@ -154,7 +157,7 @@ def build_caries_only_data_yaml(
             src_labels_dir,
             dst_images_dir,
             dst_labels_dir,
-            keep_class_id=keep_class_id,
+            keep_class_ids=keep_class_ids,
         )
 
         if split == "train" and mix_flag == 1 and ratio > 0:
@@ -178,7 +181,7 @@ def build_caries_only_data_yaml(
                     mix_src_labels_dir,
                     dst_images_dir,
                     dst_labels_dir,
-                    keep_class_id=keep_class_id,
+                    keep_class_ids=keep_class_ids,
                     image_prefix=copy_prefix,
                     clear_existing=False,
                 )
@@ -197,7 +200,7 @@ def build_caries_only_data_yaml(
                     mix_src_labels_dir,
                     dst_images_dir,
                     dst_labels_dir,
-                    keep_class_id=keep_class_id,
+                    keep_class_ids=keep_class_ids,
                     image_prefix="testp__",
                     clear_existing=False,
                     selected_image_stems=sampled_names,
@@ -223,6 +226,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--data", default="dataset/data.caries.yaml")
     parser.add_argument("--out-dir", default="dataset/caries_only")
     parser.add_argument("--keep-class-id", type=int, default=0)
+    parser.add_argument(
+        "--merge-class-ids",
+        default="",
+        help="comma-separated class ids to merge into the single target class, e.g. 0,1",
+    )
     parser.add_argument("--dry-run", action="store_true")
     return parser.parse_args()
 
@@ -238,19 +246,27 @@ def main() -> int:
     if not out_dir.is_absolute():
         out_dir = ROOT / out_dir
 
+    merge_class_ids = {
+        int(item)
+        for item in args.merge_class_ids.split(",")
+        if item.strip() != ""
+    }
+    if not merge_class_ids:
+        merge_class_ids = {args.keep_class_id}
+
     if args.dry_run:
         print(
             {
                 "data": str(data_path),
                 "out_dir": str(out_dir),
-                "keep_class_id": args.keep_class_id,
+                "keep_class_ids": sorted(merge_class_ids),
             }
         )
         return 0
 
     out_yaml = build_caries_only_data_yaml(
         data_yaml=data_path,
-        keep_class_id=args.keep_class_id,
+        keep_class_ids=merge_class_ids,
         out_dir=out_dir,
     )
     print(str(out_yaml))

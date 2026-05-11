@@ -25,6 +25,8 @@ events.out.tfevents*
 
 # Dataset archives and downloads
 dataset.zip
+dataset_old.zip
+Benchmarking Dataset.zip
 dataset/
 *.tar
 *.tar.gz

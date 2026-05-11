@@ -130,7 +130,7 @@ def main() -> int:
         "splits": [],
     }
 
-    for split in ("train", "val", "test"):
+    for split in ("train", "valid", "test"):
         results["splits"].append(inspect_split(dataset_root, split, allowed_classes))
 
     report_path = Path(args.report)
