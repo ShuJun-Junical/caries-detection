@@ -21,7 +21,7 @@ DEVICE="${DEVICE:-0}"
 SPLIT="${SPLIT:-test}"
 IMGSZ="${IMGSZ:-640}"
 BATCH="${BATCH:-16}"
-DATA="${DATA:-dataset/data.caries.yaml}"
+DATA="${DATA:-configs/data.caries.yaml}"
 OUT_ROOT="${OUT_ROOT:-runs/test_compare}"
 
 cd "$ROOT_DIR"

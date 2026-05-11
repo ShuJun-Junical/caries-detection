@@ -6,6 +6,7 @@ import argparse
 import subprocess
 from pathlib import Path
 
+from scripts.common.dataset_utils import ensure_standard_dataset_yaml
 from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
@@ -41,6 +42,8 @@ def main() -> int:
     if not data_value:
         raise ValueError("Missing training data config. Set data in the model YAML or pass --data.")
 
+    cfg["data"] = str(ensure_standard_dataset_yaml(cfg["data"]))
+
     yolov5_dir = Path(args.yolov5_dir)
     if not yolov5_dir.is_absolute():
         yolov5_dir = ROOT / yolov5_dir
@@ -49,10 +52,6 @@ def main() -> int:
         raise FileNotFoundError(
             f"Cannot find YOLOv5 train.py at {train_py}. Clone repo into third_party/yolov5 first."
         )
-
-    data_path = Path(cfg["data"])
-    if not data_path.is_absolute():
-        data_path = ROOT / data_path
 
     weights = Path(cfg.get("model", "yolov5s.pt"))
     if not weights.is_absolute():
@@ -69,7 +68,7 @@ def main() -> int:
         "python",
         str(train_py),
         "--data",
-        str(data_path),
+        str(cfg["data"]),
         "--weights",
         str(weights),
         "--epochs",

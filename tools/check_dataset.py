@@ -4,8 +4,15 @@ import argparse
 import json
 from collections import Counter
 from pathlib import Path
+import sys
 
 import yaml
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.common.dataset_utils import resolve_dataset_root, resolve_yolo_label_dir
 
 
 def _load_data_cfg(path: Path) -> dict:
@@ -28,12 +35,18 @@ def _label_stems(labels_dir: Path) -> set[str]:
 
 def inspect_split(root: Path, split: str, allowed_classes: set[int]) -> dict:
     images_dir = root / split / "images"
-    labels_dir = root / split / "labels"
-
-    if not images_dir.exists() or not labels_dir.exists():
+    if not images_dir.exists():
         return {
             "split": split,
-            "error": f"Missing directory: {images_dir} or {labels_dir}",
+            "error": f"Missing directory: {images_dir}",
+        }
+
+    try:
+        labels_dir = resolve_yolo_label_dir(images_dir)
+    except FileNotFoundError as exc:
+        return {
+            "split": split,
+            "error": str(exc),
         }
 
     image_map = _image_stem_to_exts(images_dir)
@@ -99,7 +112,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Check YOLO dataset integrity")
     parser.add_argument(
         "--data",
-        default="dataset/data.caries.yaml",
+        default="configs/data.caries.yaml",
         help="Path to data yaml",
     )
     parser.add_argument(
@@ -115,9 +128,7 @@ def main() -> int:
         data_cfg_path = repo_root / data_cfg_path
 
     cfg = _load_data_cfg(data_cfg_path)
-    dataset_root = Path(cfg["path"])
-    if not dataset_root.is_absolute():
-        dataset_root = (repo_root / dataset_root).resolve()
+    dataset_root = resolve_dataset_root(cfg)
 
     nc = int(cfg.get("nc", 0))
     allowed_classes = set(range(nc))

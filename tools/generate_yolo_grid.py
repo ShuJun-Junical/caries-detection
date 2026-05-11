@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--labels-dir",
         type=Path,
-        default=Path("dataset/train/labels"),
+        default=Path("dataset/train/yolo"),
         help="Directory containing YOLO txt labels.",
     )
     parser.add_argument(

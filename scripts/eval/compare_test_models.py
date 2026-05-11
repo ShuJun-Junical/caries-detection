@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
+from scripts.common.dataset_utils import ensure_standard_dataset_yaml
 from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
 
 MODELS_CFG_PATH = "configs/models.yaml"
@@ -39,7 +40,7 @@ def parse_args() -> argparse.Namespace:
         choices=["v5", "v8", "v11", "latest"],
         help="Model families to evaluate",
     )
-    parser.add_argument("--data", default="dataset/data.caries.yaml")
+    parser.add_argument("--data", default="configs/data.caries.yaml")
     parser.add_argument("--split", default="test", choices=["train", "val", "test"])
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=16)
@@ -192,7 +193,7 @@ def main() -> int:
     args = parse_args()
 
     models_cfg = load_yaml(MODELS_CFG_PATH)
-    data = resolve_path(args.data)
+    data = ensure_standard_dataset_yaml(resolve_path(args.data))
     output_dir = ensure_dir(args.output_dir)
 
     specs: list[ModelSpec] = []

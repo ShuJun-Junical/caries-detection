@@ -5,9 +5,15 @@ import random
 import argparse
 from pathlib import Path
 from typing import Any
+import sys
 
 import yaml
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from scripts.common.dataset_utils import resolve_dataset_root, resolve_yolo_label_dir
 from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
 
 dataset_version = "1.0.100"
@@ -21,10 +27,7 @@ def _resolve_data_yaml_path(data: str | Path) -> Path:
 
 
 def _resolve_dataset_root(cfg: dict[str, Any], data_yaml_path: Path) -> Path:
-    dataset_root = Path(cfg["path"])
-    if dataset_root.is_absolute():
-        return dataset_root.resolve()
-    return (data_yaml_path.parent / dataset_root).resolve()
+    return resolve_dataset_root(cfg)
 
 
 def _class_id_from_line(line: str) -> int | None:
@@ -139,7 +142,7 @@ def build_caries_only_data_yaml(
     for split in ("train", "val", "test"):
         split_images = Path(cfg[split])
         src_images_dir = (dataset_root / split_images).resolve()
-        src_labels_dir = src_images_dir.parent / "labels"
+        src_labels_dir = resolve_yolo_label_dir(src_images_dir)
 
         dst_split_dir = target_root / split
         dst_images_dir = dst_split_dir / "images"
@@ -163,7 +166,7 @@ def build_caries_only_data_yaml(
         if split == "train" and mix_flag == 1 and ratio > 0:
             test_images = Path(cfg["test"])
             mix_src_images_dir = (dataset_root / test_images).resolve()
-            mix_src_labels_dir = mix_src_images_dir.parent / "labels"
+            mix_src_labels_dir = resolve_yolo_label_dir(mix_src_images_dir)
             test_image_stems = sorted(
                 src_image.stem for src_image in mix_src_images_dir.iterdir() if src_image.is_file()
             )
@@ -223,8 +226,8 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Build caries-only dataset view before training"
     )
-    parser.add_argument("--data", default="dataset/data.caries.yaml")
-    parser.add_argument("--out-dir", default="dataset/caries_only")
+    parser.add_argument("--data", default="configs/data.caries.yaml")
+    parser.add_argument("--out-dir", default="runs/tmp_data/caries_only")
     parser.add_argument("--keep-class-id", type=int, default=0)
     parser.add_argument(
         "--merge-class-ids",

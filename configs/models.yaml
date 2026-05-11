@@ -21,27 +21,27 @@ use_attention: true
 
 yolov5:
   model: checkpoints/yolov5s.pt
-  data: dataset/data.caries.yaml
+  data: configs/data.caries.yaml
   project: runs/yolov5
   name: caries-yolov5
 
 yolov8:
   model: checkpoints/yolov8n.pt
-  data: dataset/data.caries.yaml
+  data: configs/data.caries.yaml
   project: runs/yolov8
   name: caries-yolov8
   amp: false
 
 yolov11:
   model: checkpoints/yolo11n.pt
-  data: dataset/caries_only/data.caries_only.generated.yaml
+  data: configs/data.caries.yaml
   project: runs/yolov11
   name: caries-yolov11
   amp: false
 
 latest:
   model: checkpoints/yolo26n.pt
-  data: dataset/caries_only/data.caries_only.generated.yaml
+  data: configs/data.caries.yaml
   project: runs/latest
   name: caries-latest
   amp: true
