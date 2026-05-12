@@ -13,7 +13,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.common.dataset_utils import resolve_dataset_root, resolve_yolo_label_dir
+from scripts.common.io_utils import ROOT, ensure_dir, load_yaml, resolve_dataset_root
 from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
 
 dataset_version = "1.0.100"
@@ -24,10 +24,6 @@ def _resolve_data_yaml_path(data: str | Path) -> Path:
     if not p.is_absolute():
         p = ROOT / p
     return p.resolve()
-
-
-def _resolve_dataset_root(cfg: dict[str, Any], data_yaml_path: Path) -> Path:
-    return resolve_dataset_root(cfg)
 
 
 def _class_id_from_line(line: str) -> int | None:
@@ -127,7 +123,7 @@ def build_caries_only_data_yaml(
 
     data_yaml_path = _resolve_data_yaml_path(data_yaml)
     cfg = load_yaml(data_yaml_path)
-    dataset_root = _resolve_dataset_root(cfg, data_yaml_path)
+    dataset_root = resolve_dataset_root(cfg)
 
     if keep_class_ids is None:
         keep_class_ids = {0}
@@ -142,7 +138,9 @@ def build_caries_only_data_yaml(
     for split in ("train", "val", "test"):
         split_images = Path(cfg[split])
         src_images_dir = (dataset_root / split_images).resolve()
-        src_labels_dir = resolve_yolo_label_dir(src_images_dir)
+        src_labels_dir = src_images_dir.parent / "labels"
+        if not src_labels_dir.exists():
+            raise FileNotFoundError(f"Missing labels directory for images dir: {src_images_dir}")
 
         dst_split_dir = target_root / split
         dst_images_dir = dst_split_dir / "images"
@@ -166,7 +164,9 @@ def build_caries_only_data_yaml(
         if split == "train" and mix_flag == 1 and ratio > 0:
             test_images = Path(cfg["test"])
             mix_src_images_dir = (dataset_root / test_images).resolve()
-            mix_src_labels_dir = resolve_yolo_label_dir(mix_src_images_dir)
+            mix_src_labels_dir = mix_src_images_dir.parent / "labels"
+            if not mix_src_labels_dir.exists():
+                raise FileNotFoundError(f"Missing labels directory for images dir: {mix_src_images_dir}")
             test_image_stems = sorted(
                 src_image.stem for src_image in mix_src_images_dir.iterdir() if src_image.is_file()
             )

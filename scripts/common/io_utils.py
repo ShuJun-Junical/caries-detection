@@ -38,3 +38,10 @@ def ensure_dir(path: str | Path) -> Path:
         p = ROOT / p
     p.mkdir(parents=True, exist_ok=True)
     return p
+
+
+def resolve_dataset_root(cfg: dict[str, Any]) -> Path:
+    dataset_root = Path(cfg["path"])
+    if dataset_root.is_absolute():
+        return dataset_root.resolve()
+    return (ROOT / dataset_root).resolve()

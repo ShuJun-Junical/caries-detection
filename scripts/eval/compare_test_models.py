@@ -16,7 +16,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from ultralytics import YOLO
 
-from scripts.common.dataset_utils import ensure_standard_dataset_yaml
 from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
 
 MODELS_CFG_PATH = "configs/models.yaml"
@@ -193,7 +192,7 @@ def main() -> int:
     args = parse_args()
 
     models_cfg = load_yaml(MODELS_CFG_PATH)
-    data = ensure_standard_dataset_yaml(resolve_path(args.data))
+    data = resolve_path(args.data)
     output_dir = ensure_dir(args.output_dir)
 
     specs: list[ModelSpec] = []

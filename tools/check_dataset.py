@@ -12,7 +12,7 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
-from scripts.common.dataset_utils import resolve_dataset_root, resolve_yolo_label_dir
+from scripts.common.io_utils import ROOT, ensure_dir, load_yaml, resolve_dataset_root
 
 
 def _load_data_cfg(path: Path) -> dict:
@@ -41,12 +41,11 @@ def inspect_split(root: Path, split: str, allowed_classes: set[int]) -> dict:
             "error": f"Missing directory: {images_dir}",
         }
 
-    try:
-        labels_dir = resolve_yolo_label_dir(images_dir)
-    except FileNotFoundError as exc:
+    labels_dir = images_dir.parent / "labels"
+    if not labels_dir.exists():
         return {
             "split": split,
-            "error": str(exc),
+            "error": f"Missing directory: {labels_dir}",
         }
 
     image_map = _image_stem_to_exts(images_dir)

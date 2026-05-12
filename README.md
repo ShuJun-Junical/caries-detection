@@ -59,6 +59,8 @@ Recommended order before long runs:
 make dataset-check
 ```
 
+The raw dataset uses the standard YOLO layout with `images/` and `labels/` under each split. In this repository, the `dataset/{train,valid,test}/labels` entries are symlinks to the existing `yolo/` folders, so scripts and trainers can read labels from `labels/` directly.
+
 ### Build caries-only dataset view
 
 Before training, you can create the single-class dataset view with:
@@ -168,6 +170,7 @@ To enable attention in Slurm jobs, set `use_attention: true` in the top-level or
 - Dataset config: [dataset/data.caries.yaml](dataset/data.caries.yaml)
 - Consolidated model defaults: [configs/models.yaml](configs/models.yaml) (preferred; contains per-family subsections `yolov5`, `yolov8`, `yolov11`, `latest`)
 - Legacy per-family YAMLs (kept for compatibility): `configs/models.yolov5.yaml`, `configs/models.yolov8.yaml`, `configs/models.yolov11.yaml`, `configs/models.latest.yaml`.
+- Dataset split layout: `dataset/train|valid|test/images` and `dataset/train|valid|test/labels`, where each `labels/` symlink points to the existing `yolo/` directory.
 
 Current class setup:
 

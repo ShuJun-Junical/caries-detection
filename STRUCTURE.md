@@ -34,7 +34,7 @@ This document explains the role of each major directory and key files.
 - `dataset/`
   - `data.caries.yaml`: dataset root, split paths, and class names.
   - `caries_only/data.caries_only.generated.yaml`: generated single-class dataset view used by families that point at it in `configs/models.yaml`.
-  - `train/`, `val/`, `test/` with `images/` and `labels/` in YOLO format.
+  - `train/`, `val/`, `test/` with `images/` and `labels/` in YOLO format. In the raw dataset, each `labels/` entry is a symlink to the existing `yolo/` directory.
 
 ## Runtime and Artifacts
 - `checkpoints/`: local initial checkpoints for training starts.
