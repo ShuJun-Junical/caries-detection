@@ -14,7 +14,6 @@ if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 
 from scripts.common.io_utils import ROOT, ensure_dir, load_yaml, resolve_dataset_root
-from scripts.common.io_utils import ROOT, ensure_dir, load_yaml
 
 dataset_version = "1.0.100"
 
@@ -115,10 +114,12 @@ def build_caries_only_data_yaml(
     keep_class_ids: set[int] | None = None,
     out_dir: str | Path = "runs/tmp_data/caries_only",
 ) -> Path:
-    """Create a temporary single-class dataset view for training.
+    """Create a single-class dataset view for training.
 
     The original dataset is kept unchanged. This function writes filtered label
-    files to an output directory and symlinks image directories.
+    files to an output directory and symlinks image files. The generated split
+    directories use train/val/test names even if the source YAML points to a
+    different validation directory such as valid/images.
     """
 
     data_yaml_path = _resolve_data_yaml_path(data_yaml)
@@ -136,6 +137,8 @@ def build_caries_only_data_yaml(
         out_yaml.unlink()
 
     for split in ("train", "val", "test"):
+        if split not in cfg:
+            raise KeyError(f"Missing split path in data config: {split}")
         split_images = Path(cfg[split])
         src_images_dir = (dataset_root / split_images).resolve()
         src_labels_dir = src_images_dir.parent / "labels"

@@ -60,15 +60,29 @@ def resolve_path(path: str | Path) -> Path:
     return resolved
 
 
-def default_weight_path(models_cfg: dict[str, Any], family_key: str) -> Path:
+def configured_run_root(models_cfg: dict[str, Any], family_key: str) -> Path:
     family_cfg = models_cfg.get(family_key)
     if not isinstance(family_cfg, dict):
         raise KeyError(f"Missing family config: {family_key}")
     project = family_cfg.get("project")
-    name = family_cfg.get("name")
-    if not project or not name:
-        raise KeyError(f"Missing project/name for family config: {family_key}")
-    return resolve_path(Path(project) / name / "weights" / "best.pt")
+    if not project:
+        project = Path(models_cfg.get("project", "runs")) / family_key
+    return resolve_path(project)
+
+
+def latest_weight_path(models_cfg: dict[str, Any], family_key: str) -> Path:
+    run_root = configured_run_root(models_cfg, family_key)
+    candidates = sorted(
+        (p for p in run_root.glob("*/weights/best.pt") if p.is_file()),
+        key=lambda p: p.parent.parent.name,
+        reverse=True,
+    )
+    if not candidates:
+        raise FileNotFoundError(
+            f"No default weights found for {family_key} under {run_root}/*/weights/best.pt. "
+            f"Pass an explicit path with --{family_key}-weights."
+        )
+    return candidates[0]
 
 
 def to_float(value: Any) -> float:
@@ -197,13 +211,13 @@ def main() -> int:
 
     specs: list[ModelSpec] = []
     if "v5" in args.models:
-        specs.append(ModelSpec("v5", "v5", resolve_path(args.v5_weights) if args.v5_weights else default_weight_path(models_cfg, "v5")))
+        specs.append(ModelSpec("v5", "v5", resolve_path(args.v5_weights) if args.v5_weights else latest_weight_path(models_cfg, "v5")))
     if "v8" in args.models:
-        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else default_weight_path(models_cfg, "v8")))
+        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else latest_weight_path(models_cfg, "v8")))
     if "v11" in args.models:
-        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else default_weight_path(models_cfg, "v11")))
+        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else latest_weight_path(models_cfg, "v11")))
     if "v26" in args.models:
-        specs.append(ModelSpec("v26", "ultralytics", resolve_path(args.v26_weights) if args.v26_weights else default_weight_path(models_cfg, "v26")))
+        specs.append(ModelSpec("v26", "ultralytics", resolve_path(args.v26_weights) if args.v26_weights else latest_weight_path(models_cfg, "v26")))
 
     yolov5_run = None
     if any(spec.kind == "v5" for spec in specs):

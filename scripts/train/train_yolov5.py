@@ -26,12 +26,10 @@ def main() -> int:
     args = parse_args()
 
     models_blob = load_yaml(args.config)
-    if "v5" in models_blob:
-        model_cfg = models_blob.get("v5", {})
-        base_cfg = {k: v for k, v in models_blob.items() if k not in FAMILY_KEYS}
-    else:
-        model_cfg = models_blob
-        base_cfg = {k: v for k, v in load_yaml("configs/models.yaml").items() if k not in FAMILY_KEYS}
+    base_cfg = {k: v for k, v in models_blob.items() if k not in FAMILY_KEYS}
+    model_cfg = models_blob.get("v5")
+    if model_cfg is None:
+        raise KeyError("Missing family section in model config: v5")
 
     cfg = merge_dicts(base_cfg, model_cfg)
     cfg["device"] = args.device
