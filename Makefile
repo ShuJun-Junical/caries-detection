@@ -56,5 +56,20 @@ slurm-v5-p100:
 	sbatch scripts/slurm/train_yolov5_p100.sbatch
 
 clean-artifacts:
-	rm -rf runs/* logs/*
-	mkdir -p logs/slurm
+	@targets="$$(find runs logs -mindepth 1 -print 2>/dev/null | sort)"; \
+	if [[ -z "$$targets" ]]; then \
+		echo "No artifacts to remove under runs/ or logs/."; \
+		mkdir -p runs logs/slurm; \
+		exit 0; \
+	fi; \
+	echo "The following artifacts will be removed:"; \
+	printf '%s\n' "$$targets"; \
+	read -r -p "Delete these artifacts? [y/N] " confirm; \
+	if [[ "$$confirm" != "y" && "$$confirm" != "Y" ]]; then \
+		echo "Aborted."; \
+		exit 0; \
+	fi; \
+	rm -rf runs/* logs/*; \
+	mkdir -p runs logs/slurm; \
+	echo "Post-cleanup artifact directories:"; \
+	find runs logs -maxdepth 2 -mindepth 1 -print | sort

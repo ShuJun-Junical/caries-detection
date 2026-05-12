@@ -13,7 +13,6 @@ This document explains the role of each major directory and key files.
 ## Source Directories
 - `scripts/common/`
   - `io_utils.py`: shared helpers for YAML loading, config merge, path handling, and timestamp tags.
-  - (moved) `dataset_filters.py`: functionality moved to `tools/prepare_caries_only_data.py`; builds temporary training dataset views (for example, caries-only filtering) without modifying original dataset files.
 - `scripts/train/`
   - `train_ultralytics.py`: train entry for v8, v11, v26. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies family plus device/workers.
   - `train_yolov5.py`: train entry for local YOLOv5 clone. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies device/workers.
@@ -25,15 +24,16 @@ This document explains the role of each major directory and key files.
   - `train_ultralytics_p100.sbatch`: Ultralytics training for P100-compatible environment. Slurm wrappers focus on device/venv/family and pass the required device/workers settings.
   - `train_yolov5.sbatch`: YOLOv5 training on standard GPU nodes. Slurm wrappers focus on device/venv and pass the required device/workers settings.
   - `train_yolov5_p100.sbatch`: YOLOv5 training for P100-compatible environment. Slurm wrappers focus on device/venv and pass the required device/workers settings.
+  - `common.sh`: shared Slurm helpers for virtualenv activation, device resolution, worker defaults, and CUDA capability checks.
   - `submit_examples.sh`: sample batch submission helper.
 
 ## Config and Data
 - `configs/`
-  - `models.yaml`: consolidated per-family model defaults (preferred). Contains subsections `v5`, `v8`, `v11`, `v26` with only model-specific overrides (checkpoint, data, project/name, and family-specific flags).
+  - `models.yaml`: consolidated per-family model defaults (preferred). Contains subsections `v5`, `v8`, `v11`, `v26` with only model-specific overrides (checkpoint, data, project, and family-specific flags).
 - `dataset/`
-  - `data.caries.yaml`: dataset root, split paths, and class names.
+  - Dataset files live under `dataset/`; the canonical dataset YAML is `configs/data.caries.yaml`.
   - `caries_only/data.caries_only.generated.yaml`: generated single-class dataset view used by families that point at it in `configs/models.yaml`.
-  - `train/`, `val/`, `test/` with `images/` and `labels/` in YOLO format. In the raw dataset, each `labels/` entry is a symlink to the existing `yolo/` directory.
+  - `train/`, `valid/`, `test/` with `images/` and `labels/` in YOLO format. In the raw dataset, each `labels/` entry is a symlink to the existing `yolo/` directory.
 
 ## Runtime and Artifacts
 - `checkpoints/`: local initial checkpoints for training starts.
@@ -42,7 +42,7 @@ This document explains the role of each major directory and key files.
 
 ## Tooling and Vendor Code
 - `tools/`
-  - `prepare_caries_only_data.py`: CLI/tool to create a temporary single-class (caries-only) dataset view; replaces `scripts/common/dataset_filters.py` and `scripts/train/prepare_caries_only_data.py`.
+  - `prepare_caries_only_data.py`: CLI/tool to create a temporary single-class (caries-only) dataset view without modifying source dataset files.
   - `check_dataset.py`: dataset integrity and label format checks.
   - `ddp_test.py`, `ddp_gloo_test.py`, `ddp_gloo_cuda_test.py`: distributed environment probes.
 - `third_party/yolov5/`: vendored upstream YOLOv5 code, treated as external source.

@@ -70,7 +70,7 @@ def configured_run_root(models_cfg: dict[str, Any], family_key: str) -> Path:
     return resolve_path(project)
 
 
-def latest_weight_path(models_cfg: dict[str, Any], family_key: str) -> Path:
+def latest_run_weight_path(models_cfg: dict[str, Any], family_key: str) -> Path:
     run_root = configured_run_root(models_cfg, family_key)
     candidates = sorted(
         (p for p in run_root.glob("*/weights/best.pt") if p.is_file()),
@@ -211,13 +211,13 @@ def main() -> int:
 
     specs: list[ModelSpec] = []
     if "v5" in args.models:
-        specs.append(ModelSpec("v5", "v5", resolve_path(args.v5_weights) if args.v5_weights else latest_weight_path(models_cfg, "v5")))
+        specs.append(ModelSpec("v5", "v5", resolve_path(args.v5_weights) if args.v5_weights else latest_run_weight_path(models_cfg, "v5")))
     if "v8" in args.models:
-        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else latest_weight_path(models_cfg, "v8")))
+        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else latest_run_weight_path(models_cfg, "v8")))
     if "v11" in args.models:
-        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else latest_weight_path(models_cfg, "v11")))
+        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else latest_run_weight_path(models_cfg, "v11")))
     if "v26" in args.models:
-        specs.append(ModelSpec("v26", "ultralytics", resolve_path(args.v26_weights) if args.v26_weights else latest_weight_path(models_cfg, "v26")))
+        specs.append(ModelSpec("v26", "ultralytics", resolve_path(args.v26_weights) if args.v26_weights else latest_run_weight_path(models_cfg, "v26")))
 
     yolov5_run = None
     if any(spec.kind == "v5" for spec in specs):

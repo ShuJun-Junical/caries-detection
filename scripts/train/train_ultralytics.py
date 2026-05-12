@@ -104,7 +104,10 @@ def main() -> int:
         data_path = ROOT / data_path
     cfg["data"] = str(data_path)
 
-    cfg["project"] = str(ROOT / "runs" / args.family)
+    project_path = Path(cfg.get("project", Path("runs") / args.family))
+    if not project_path.is_absolute():
+        project_path = ROOT / project_path
+    cfg["project"] = str(project_path)
     cfg["name"] = now_tag()
 
     if args.dry_run:

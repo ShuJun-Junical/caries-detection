@@ -12,6 +12,9 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
+
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
 
@@ -25,17 +28,10 @@ DATA="${DATA:-configs/data.caries.yaml}"
 OUT_ROOT="${OUT_ROOT:-runs/test_compare}"
 
 cd "$ROOT_DIR"
-source "$VENV_DIR/bin/activate"
-
-python - <<'PY'
-import torch
-print(f"torch={torch.__version__}")
-print(f"cuda_available={torch.cuda.is_available()}")
-if not torch.cuda.is_available():
-    raise SystemExit("CUDA is not available in the active environment.")
-major, minor = torch.cuda.get_device_capability(0)
-print(f"device_cc={major}.{minor}")
-PY
+slurm_activate_venv "$VENV_DIR"
+CUDA_ERROR_MESSAGE="CUDA is not available in the active environment."
+export CUDA_ERROR_MESSAGE
+slurm_check_cuda
 
 cmd=(python -m scripts.eval.compare_test_models
   --models "$MODEL"

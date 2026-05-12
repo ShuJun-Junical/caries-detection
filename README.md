@@ -16,7 +16,6 @@ Training and evaluation workflows for dental caries detection across v5, v8, v11
 - scripts/train: training entry points
 - scripts/eval: evaluation and comparison scripts
 - scripts/slurm: Slurm submit wrappers
-- tools: dataset and distributed environment checks
 - tools: dataset and distributed environment checks (see `tools/prepare_caries_only_data.py` for building a caries-only dataset view)
 - checkpoints: local starter weights
 - third_party/yolov5: upstream vendor code
@@ -66,7 +65,7 @@ The raw dataset uses the standard YOLO layout with `images/` and `labels/` under
 Before training, you can create the single-class dataset view with:
 
 ```bash
-python tools/prepare_caries_only_data.py --data dataset/data.caries.yaml --out-dir dataset/caries_only
+python tools/prepare_caries_only_data.py --data configs/data.caries.yaml --out-dir dataset/caries_only
 ```
 
 ### Training Commands
@@ -101,8 +100,7 @@ Training hyperparameters now live only in `configs/models.yaml`. The direct trai
 | use_attention | configs/models.yaml | Enables CBAM injection (Ultralytics) or transformer cfg (YOLOv5). |
 | model | configs/models.yaml family section | Family checkpoint path. |
 | data | configs/models.yaml family section | Family dataset YAML path. |
-| project | configs/models.yaml family section | Output root for that family. |
-| name | configs/models.yaml family section | Run name for that family. |
+| project | configs/models.yaml family section | Output root for timestamped runs. |
 | amp | configs/models.yaml family section | Family-specific Ultralytics option. |
 | device | CLI / Slurm env | Training script requires `--device`; Slurm sets `DEVICE`. |
 | workers | CLI / Slurm env | Training script requires `--workers`; Slurm sets or auto-computes `WORKERS`. |
@@ -137,6 +135,8 @@ make run-all
 make compare-test
 ```
 
+When weight paths are not provided, `scripts.eval.compare_test_models` evaluates the latest timestamped run under each family project root, for example `runs/v26/*/weights/best.pt`. Pass `--v5-weights`, `--v8-weights`, `--v11-weights`, or `--v26-weights` to evaluate a specific checkpoint.
+
 ## Slurm Usage
 
 Standard GPU nodes:
@@ -153,7 +153,7 @@ make slurm-ultra-p100
 make slurm-v5-p100
 ```
 
-Direct submission with overrides (Slurm wrappers only control device/venv/family/workers by default):
+Direct submission with overrides (Slurm wrappers only control device/venv/family/workers by default). Shared device, worker, venv activation, and CUDA capability checks live in `scripts/slurm/common.sh`.
 
 ```bash
 FAMILY=v11 sbatch scripts/slurm/train_ultralytics.sbatch
@@ -166,29 +166,31 @@ To enable attention in Slurm jobs, set `use_attention: true` in the top-level or
 
 ## Config Notes
 
-- Dataset config: [dataset/data.caries.yaml](dataset/data.caries.yaml)
+- Dataset config: [configs/data.caries.yaml](configs/data.caries.yaml)
 - Consolidated model defaults: [configs/models.yaml](configs/models.yaml) (preferred; contains per-family subsections `v5`, `v8`, `v11`, `v26`)
 - Dataset split layout: `dataset/train|valid|test/images` and `dataset/train|valid|test/labels`, where each `labels/` symlink points to the existing `yolo/` directory.
 
 Current class setup:
 
-- nc: 2
-- names: caries, other
+- nc: 1
+- names: caries
 
 Training-time note:
 
 - To train a family on the generated single-class view, point its `data` entry in `configs/models.yaml` at `dataset/caries_only/data.caries_only.generated.yaml`.
-- To train on the full two-class dataset, point the family entry at `dataset/data.caries.yaml`.
+- Training run directories use timestamp names under each family project root, for example `runs/v26/20260512-153453`.
 
 ## Artifact Policy
 
 - runs and logs are runtime outputs, not source of truth
 - source of truth stays in configs and scripts
-- clean artifacts with:
+- clean artifacts interactively with:
 
 ```bash
 make clean-artifacts
 ```
+
+This target lists the files under `runs/` and `logs/`, asks for confirmation, then prints the post-cleanup artifact list.
 
 ## Important Guardrails
 

@@ -1,7 +1,7 @@
 # Consolidated configuration file.
 # Top-level keys are shared training defaults. Per-family sections only
 # contain model-specific overrides such as checkpoint path, dataset, and
-# project/name.
+# output project root.
 
 # Shared training defaults (merged from hyp.base.yaml)
 epochs: 100
@@ -16,32 +16,27 @@ weight_decay: 0.0005
 
 # Runtime outputs
 cache: ram
-project: runs
 use_attention: false
 
 v5:
   model: checkpoints/yolov5s.pt
   data: configs/data.caries.yaml
   project: runs/v5
-  name: caries-v5
 
 v8:
   model: checkpoints/yolov8n.pt
   data: configs/data.caries.yaml
   project: runs/v8
-  name: caries-v8
   amp: false
 
 v11:
   model: checkpoints/yolo11n.pt
   data: configs/data.caries.yaml
   project: runs/v11
-  name: caries-v11
   amp: false
 
 v26:
   model: checkpoints/yolo26n.pt
   data: configs/data.caries.yaml
   project: runs/v26
-  name: caries-v26
   amp: true

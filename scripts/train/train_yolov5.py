@@ -56,7 +56,10 @@ def main() -> int:
     weights = Path(cfg.get("model", "yolov5s.pt"))
     if not weights.is_absolute():
         weights = ROOT / weights
-    project = str(ROOT / "runs" / "v5")
+    project_path = Path(cfg.get("project", Path("runs") / "v5"))
+    if not project_path.is_absolute():
+        project_path = ROOT / project_path
+    project = str(project_path)
     name = now_tag()
 
     use_attention_flag = bool(cfg.pop("use_attention", False))

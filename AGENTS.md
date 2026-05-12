@@ -13,7 +13,7 @@ This file defines project-specific rules for AI assistants working in this repos
 - `scripts/eval/`: model comparison and evaluation scripts.
 - `scripts/slurm/`: Slurm submit scripts.
 - `tools/`: dataset and distributed environment checks.
-  - `prepare_caries_only_data.py`: build a temporary single-class (caries-only) dataset view; replaces `scripts/common/dataset_filters.py` and `scripts/train/prepare_caries_only_data.py`.
+  - `prepare_caries_only_data.py`: build a temporary single-class (caries-only) dataset view without modifying source dataset files.
 - `third_party/yolov5/`: upstream YOLOv5 codebase (vendor code).
 - `runs/` and `logs/`: runtime artifacts (not source of truth).
 
@@ -43,12 +43,12 @@ This file defines project-specific rules for AI assistants working in this repos
   - `python -m scripts.eval.compare_test_models --models v5 v8 v11 v26`
 
 ## 7) Slurm Rules
-Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`, and `name` should be set in the top-level of `configs/models.yaml` or the per-family section of `configs/models.yaml`. `device` and `workers` are supplied by the training CLI or Slurm wrapper.
+Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, and `project` should be set in the top-level of `configs/models.yaml` or the per-family section of `configs/models.yaml`. Run names are generated as timestamps by the training scripts. `device` and `workers` are supplied by the training CLI or Slurm wrapper.
 
 ### Parameter Control Matrix (Single Source of Truth)
 - Config-only (do not expose as training CLI overrides):
   - `epochs`, `imgsz`, `batch`, `patience`, `optimizer`, `lr0`, `weight_decay`, `cache`, `use_attention`
-  - per-family: `model`, `data`, `project`, `name`, `amp`
+  - per-family: `model`, `data`, `project`, `amp`
 - CLI/Slurm runtime-only:
   - `device`, `workers`
   - `family` (Ultralytics selector), `yolov5-dir` (YOLOv5 repo path), `config` (`CFG` in Slurm)
@@ -56,13 +56,13 @@ Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`
   - Do not add the same parameter to both config and training CLI. If a new parameter is added, choose one control plane only.
 
 ## 8) Data Rules
-- Dataset config: `dataset/data.caries.yaml`.
+- Dataset config: `configs/data.caries.yaml`.
 - Required split structure:
   - `dataset/train/images`, `dataset/train/labels`
-  - `dataset/val/images`, `dataset/val/labels`
+  - `dataset/valid/images`, `dataset/valid/labels`
   - `dataset/test/images`, `dataset/test/labels`
 - Validate data integrity before major training runs:
-  - `python tools/check_dataset.py --data dataset/data.caries.yaml`
+  - `python tools/check_dataset.py --data configs/data.caries.yaml`
 
 ## 9) Editing Rules For Agents
 - Keep changes minimal and scoped to the user request.
@@ -74,6 +74,7 @@ Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`
 - `runs/` and `logs/` can be cleaned when user asks.
 - Keep only explicitly requested model weights when pruning artifacts.
 - Do not delete checkpoints in `checkpoints/` unless user explicitly requests it.
+- Cleanup commands must list candidate files first and require explicit user confirmation before deletion.
 
 ## 11) Strict Guardrails
 - Never modify `third_party/yolov5/` unless the user explicitly asks.
@@ -84,7 +85,7 @@ Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`
 
 ## 12) Recommended Execution Workflow
 - Before Slurm submission, run a lightweight local validation:
-  - `python tools/check_dataset.py --data dataset/data.caries.yaml`
+  - `python tools/check_dataset.py --data configs/data.caries.yaml`
 - For script changes, run `--dry-run` when available.
 - For Slurm, submit with explicit overrides when testing:
   - `FAMILY=v11 DEVICE=0 WORKERS=8 sbatch scripts/slurm/train_ultralytics.sbatch`
