@@ -23,7 +23,7 @@ help:
 	@echo "  clean-artifacts   - Remove generated logs and runs"
 
 dataset-check:
-	$(PY_ULTRA) tools/check_dataset.py --data dataset/data.caries.yaml
+	$(PY_ULTRA) tools/check_dataset.py --data configs/data.caries.yaml
 
 train-v8:
 	$(PY_ULTRA) -m scripts.train.train_ultralytics --family v8 --device $(DEVICE) --workers $(WORKERS)

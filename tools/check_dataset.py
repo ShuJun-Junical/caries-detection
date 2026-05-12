@@ -33,8 +33,8 @@ def _label_stems(labels_dir: Path) -> set[str]:
     return {p.stem for p in labels_dir.glob("*.txt") if p.is_file()}
 
 
-def inspect_split(root: Path, split: str, allowed_classes: set[int]) -> dict:
-    images_dir = root / split / "images"
+def inspect_split(root: Path, split: str, images_rel: str, allowed_classes: set[int]) -> dict:
+    images_dir = root / images_rel
     if not images_dir.exists():
         return {
             "split": split,
@@ -140,8 +140,19 @@ def main() -> int:
         "splits": [],
     }
 
-    for split in ("train", "valid", "test"):
-        results["splits"].append(inspect_split(dataset_root, split, allowed_classes))
+    for split in ("train", "val", "test"):
+        images_rel = cfg.get(split)
+        if not images_rel:
+            results["splits"].append(
+                {
+                    "split": split,
+                    "error": f"Missing split path in data config: {split}",
+                }
+            )
+            continue
+        results["splits"].append(
+            inspect_split(dataset_root, split, images_rel, allowed_classes)
+        )
 
     report_path = Path(args.report)
     if not report_path.is_absolute():
