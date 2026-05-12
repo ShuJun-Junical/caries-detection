@@ -12,10 +12,8 @@
 
 set -euo pipefail
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-source "$SCRIPT_DIR/common.sh"
-
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
+source "$ROOT_DIR/scripts/slurm/common.sh"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
 CFG="${CFG:-configs/models.yaml}"
 FAMILY="${FAMILY:-v26}"
