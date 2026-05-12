@@ -15,7 +15,7 @@ This document explains the role of each major directory and key files.
   - `io_utils.py`: shared helpers for YAML loading, config merge, path handling, and timestamp tags.
   - (moved) `dataset_filters.py`: functionality moved to `tools/prepare_caries_only_data.py`; builds temporary training dataset views (for example, caries-only filtering) without modifying original dataset files.
 - `scripts/train/`
-  - `train_ultralytics.py`: train entry for v8, v11, latest. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies family plus device/workers.
+  - `train_ultralytics.py`: train entry for v8, v11, v26. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies family plus device/workers.
   - `train_yolov5.py`: train entry for local YOLOv5 clone. Training hyperparameters come from `configs/models.yaml`; the CLI only supplies device/workers.
   - `run_all.py`: sequential smoke run across selected model families, forwarding config plus device/workers.
 - `scripts/eval/`
@@ -29,8 +29,7 @@ This document explains the role of each major directory and key files.
 
 ## Config and Data
 - `configs/`
-  - `models.yaml`: consolidated per-family model defaults (preferred). Contains subsections `yolov5`, `yolov8`, `yolov11`, `latest` with only model-specific overrides (checkpoint, data, project/name, and family-specific flags).
-  - Legacy per-family files (kept for compatibility): `models.yolov8.yaml`, `models.yolov11.yaml`, `models.latest.yaml`, `models.yolov5.yaml`, `models.yolov5.p100.yaml`.
+  - `models.yaml`: consolidated per-family model defaults (preferred). Contains subsections `v5`, `v8`, `v11`, `v26` with only model-specific overrides (checkpoint, data, project/name, and family-specific flags).
 - `dataset/`
   - `data.caries.yaml`: dataset root, split paths, and class names.
   - `caries_only/data.caries_only.generated.yaml`: generated single-class dataset view used by families that point at it in `configs/models.yaml`.

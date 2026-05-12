@@ -17,12 +17,12 @@ def run_cmd(cmd: list[str], dry_run: bool) -> int:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run YOLOv5/v8/v11/latest training targets in sequence")
+    parser = argparse.ArgumentParser(description="Run v5/v8/v11/v26 training targets in sequence")
     parser.add_argument(
         "--targets",
         nargs="+",
-        default=["v5", "v8", "v11", "latest"],
-        choices=["v5", "v8", "v11", "latest"],
+        default=["v5", "v8", "v11", "v26"],
+        choices=["v5", "v8", "v11", "v26"],
     )
     parser.add_argument("--config", default="configs/models.yaml", help="Path to the consolidated model YAML")
     parser.add_argument("--device", required=True, help="Training device setting passed to the target scripts")

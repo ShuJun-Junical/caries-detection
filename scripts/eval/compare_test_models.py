@@ -30,13 +30,13 @@ class ModelSpec:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Evaluate YOLOv5/v8/v11/latest models on the test split and compare metrics"
+        description="Evaluate v5/v8/v11/v26 models on the test split and compare metrics"
     )
     parser.add_argument(
         "--models",
         nargs="+",
-        default=["v5", "v8", "v11", "latest"],
-        choices=["v5", "v8", "v11", "latest"],
+        default=["v5", "v8", "v11", "v26"],
+        choices=["v5", "v8", "v11", "v26"],
         help="Model families to evaluate",
     )
     parser.add_argument("--data", default="configs/data.caries.yaml")
@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--v5-weights", default=None)
     parser.add_argument("--v8-weights", default=None)
     parser.add_argument("--v11-weights", default=None)
-    parser.add_argument("--latest-weights", default=None)
+    parser.add_argument("--v26-weights", default=None)
     return parser.parse_args()
 
 
@@ -197,16 +197,16 @@ def main() -> int:
 
     specs: list[ModelSpec] = []
     if "v5" in args.models:
-        specs.append(ModelSpec("v5", "yolov5", resolve_path(args.v5_weights) if args.v5_weights else default_weight_path(models_cfg, "yolov5")))
+        specs.append(ModelSpec("v5", "v5", resolve_path(args.v5_weights) if args.v5_weights else default_weight_path(models_cfg, "v5")))
     if "v8" in args.models:
-        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else default_weight_path(models_cfg, "yolov8")))
+        specs.append(ModelSpec("v8", "ultralytics", resolve_path(args.v8_weights) if args.v8_weights else default_weight_path(models_cfg, "v8")))
     if "v11" in args.models:
-        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else default_weight_path(models_cfg, "yolov11")))
-    if "latest" in args.models:
-        specs.append(ModelSpec("latest", "ultralytics", resolve_path(args.latest_weights) if args.latest_weights else default_weight_path(models_cfg, "latest")))
+        specs.append(ModelSpec("v11", "ultralytics", resolve_path(args.v11_weights) if args.v11_weights else default_weight_path(models_cfg, "v11")))
+    if "v26" in args.models:
+        specs.append(ModelSpec("v26", "ultralytics", resolve_path(args.v26_weights) if args.v26_weights else default_weight_path(models_cfg, "v26")))
 
     yolov5_run = None
-    if any(spec.kind == "yolov5" for spec in specs):
+    if any(spec.kind == "v5" for spec in specs):
         yolov5_dir = resolve_path(args.yolov5_dir)
         yolov5_run = load_yolov5_runner(yolov5_dir)
 
@@ -220,7 +220,7 @@ def main() -> int:
         model_dir = output_dir / spec.label
         model_dir.mkdir(parents=True, exist_ok=True)
 
-        if spec.kind == "yolov5":
+        if spec.kind == "v5":
             if yolov5_run is None:
                 raise RuntimeError("YOLOv5 runner was not loaded.")
             metrics = evaluate_yolov5(

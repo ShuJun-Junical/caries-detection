@@ -15,7 +15,7 @@ set -euo pipefail
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
 CFG="${CFG:-configs/models.yaml}"
-FAMILY="${FAMILY:-latest}"
+FAMILY="${FAMILY:-v26}"
 DEVICE="${DEVICE:-auto}"
 ULTRALYTICS_DDP_BACKEND="${ULTRALYTICS_DDP_BACKEND:-gloo}"
 MIN_CC_MAJOR="${MIN_CC_MAJOR:-7}"

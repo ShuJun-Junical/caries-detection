@@ -4,7 +4,7 @@ This file defines project-specific rules for AI assistants working in this repos
 
 ## 1) Project Purpose
 - Train and evaluate dental caries detection models.
-- Supported families: YOLOv5, YOLOv8, YOLOv11, and latest Ultralytics family.
+- Supported families: v5, v8, v11, and v26 (official YOLO26 weights).
 - Dataset format: YOLO detection format.
 
 ## 2) Key Layout
@@ -32,15 +32,15 @@ This file defines project-specific rules for AI assistants working in this repos
 
 ## 5) Training Entry Points
 - Ultralytics training:
-  - `python -m scripts.train.train_ultralytics --family v8|v11|latest --device 0 --workers 8`
+  - `python -m scripts.train.train_ultralytics --family v8|v11|v26 --device 0 --workers 8`
 - YOLOv5 training:
   - `python -m scripts.train.train_yolov5 --yolov5-dir third_party/yolov5 --device 0 --workers 8`
 - Multi-target smoke run:
-  - `python -m scripts.train.run_all --targets v5 v8 v11 latest --device 0 --workers 8`
+  - `python -m scripts.train.run_all --targets v5 v8 v11 v26 --device 0 --workers 8`
 
 ## 6) Evaluation Entry Point
 - Compare test metrics across families:
-  - `python -m scripts.eval.compare_test_models --models v5 v8 v11 latest`
+  - `python -m scripts.eval.compare_test_models --models v5 v8 v11 v26`
 
 ## 7) Slurm Rules
 Training controls such as `use_attention`, `epochs`, `imgsz`, `batch`, `project`, and `name` should be set in the top-level of `configs/models.yaml` or the per-family section of `configs/models.yaml`. `device` and `workers` are supplied by the training CLI or Slurm wrapper.

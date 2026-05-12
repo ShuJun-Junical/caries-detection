@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-"""Train Ultralytics detector families (v8/v11/latest) from unified YAML config."""
+"""Train Ultralytics detector families (v8/v11/v26) from unified YAML config."""
 
 import argparse
 from pathlib import Path
@@ -13,7 +13,7 @@ from scripts.common.attention_utils import inject_cbam_attention
 from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
-FAMILY_KEYS = {"yolov5", "yolov8", "yolov11", "latest"}
+FAMILY_KEYS = {"v5", "v8", "v11", "v26"}
 
 
 def _count_cbam_modules(module) -> int:
@@ -73,9 +73,9 @@ def _verify_attention_on_train_start(trainer) -> None:
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Train Ultralytics family models (v8/v11/latest)")
+    parser = argparse.ArgumentParser(description="Train Ultralytics family models (v8/v11/v26)")
     parser.add_argument("--config", default=MODELS_CFG_PATH, help="Path to the consolidated model YAML")
-    parser.add_argument("--family", choices=["v8", "v11", "latest"], required=True)
+    parser.add_argument("--family", choices=["v8", "v11", "v26"], required=True)
     parser.add_argument("--device", required=True, help="Training device setting passed to Ultralytics")
     parser.add_argument("--workers", type=int, required=True, help="Dataloader worker count")
     parser.add_argument("--dry-run", action="store_true")
@@ -87,10 +87,9 @@ def main() -> int:
 
     all_models = load_yaml(args.config)
     base_cfg = {k: v for k, v in all_models.items() if k not in FAMILY_KEYS}
-    fam_key = f"yolov{args.family[1:]}" if args.family.startswith("v") else args.family
-    model_cfg = all_models.get(fam_key)
+    model_cfg = all_models.get(args.family)
     if model_cfg is None:
-        raise KeyError(f"Missing family section in model config: {fam_key}")
+        raise KeyError(f"Missing family section in model config: {args.family}")
 
     cfg = merge_dicts(base_cfg, model_cfg)
     cfg["device"] = args.device

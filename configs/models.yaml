@@ -19,29 +19,29 @@ cache: ram
 project: runs
 use_attention: false
 
-yolov5:
+v5:
   model: checkpoints/yolov5s.pt
   data: configs/data.caries.yaml
-  project: runs/yolov5
-  name: caries-yolov5
+  project: runs/v5
+  name: caries-v5
 
-yolov8:
+v8:
   model: checkpoints/yolov8n.pt
   data: configs/data.caries.yaml
-  project: runs/yolov8
-  name: caries-yolov8
+  project: runs/v8
+  name: caries-v8
   amp: false
 
-yolov11:
+v11:
   model: checkpoints/yolo11n.pt
   data: configs/data.caries.yaml
-  project: runs/yolov11
-  name: caries-yolov11
+  project: runs/v11
+  name: caries-v11
   amp: false
 
-latest:
+v26:
   model: checkpoints/yolo26n.pt
   data: configs/data.caries.yaml
-  project: runs/latest
-  name: caries-latest
+  project: runs/v26
+  name: caries-v26
   amp: true

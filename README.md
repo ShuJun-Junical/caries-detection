@@ -1,6 +1,6 @@
 # Caries Detection Training
 
-Training and evaluation workflows for dental caries detection across YOLOv5, YOLOv8, YOLOv11, and latest Ultralytics family models.
+Training and evaluation workflows for dental caries detection across v5, v8, v11, and v26 model families.
 
 ## Overview
 
@@ -74,15 +74,14 @@ python tools/prepare_caries_only_data.py --data dataset/data.caries.yaml --out-d
 ```bash
 make train-v8
 make train-v11
-make train-latest
+make train-v26
 make train-v5
 ```
 
 Default behavior for training scripts:
 
 - Dataset selection is family-specific in `configs/models.yaml`.
-- `yolov5` and `yolov8` train on `dataset/data.caries.yaml`.
-- `yolov11` and `latest` train on `dataset/caries_only/data.caries_only.generated.yaml`.
+- `v5`, `v8`, `v11`, and `v26` train on `configs/data.caries.yaml`.
 - Original dataset files are not modified.
 
 Training hyperparameters now live only in `configs/models.yaml`. The direct training entry points only take config plus device settings, so the same parameter does not exist in both YAML and CLI.
@@ -116,14 +115,14 @@ Rule of thumb: if it changes model training behavior, put it in `configs/models.
 ```bash
 python -m scripts.train.train_ultralytics --family v11 --device 0 --workers 8
 python -m scripts.train.train_yolov5 --device 0 --workers 8
-python -m scripts.train.run_all --targets v5 v8 v11 latest --device 0 --workers 8
+python -m scripts.train.run_all --targets v5 v8 v11 v26 --device 0 --workers 8
 ```
 
 Set `use_attention: true` in `configs/models.yaml` if you want attention enabled. For two-class training, point the family entry at `dataset/caries_only/data.caries_only.generated.yaml` after regenerating that dataset view.
 
 Attention behavior by family:
 
-- Ultralytics (v8/v11/latest): inject CBAM attention blocks before training.
+- Ultralytics (v8/v11/v26; v26 uses official YOLO26 weights): inject CBAM attention blocks before training.
 - YOLOv5: switch to upstream `yolov5s-transformer.yaml` (C3TR) architecture.
 
 ### Smoke Run (all families)
@@ -168,8 +167,7 @@ To enable attention in Slurm jobs, set `use_attention: true` in the top-level or
 ## Config Notes
 
 - Dataset config: [dataset/data.caries.yaml](dataset/data.caries.yaml)
-- Consolidated model defaults: [configs/models.yaml](configs/models.yaml) (preferred; contains per-family subsections `yolov5`, `yolov8`, `yolov11`, `latest`)
-- Legacy per-family YAMLs (kept for compatibility): `configs/models.yolov5.yaml`, `configs/models.yolov8.yaml`, `configs/models.yolov11.yaml`, `configs/models.latest.yaml`.
+- Consolidated model defaults: [configs/models.yaml](configs/models.yaml) (preferred; contains per-family subsections `v5`, `v8`, `v11`, `v26`)
 - Dataset split layout: `dataset/train|valid|test/images` and `dataset/train|valid|test/labels`, where each `labels/` symlink points to the existing `yolo/` directory.
 
 Current class setup:

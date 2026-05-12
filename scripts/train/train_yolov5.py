@@ -9,7 +9,7 @@ from pathlib import Path
 from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
-FAMILY_KEYS = {"yolov5", "yolov8", "yolov11", "latest"}
+FAMILY_KEYS = {"v5", "v8", "v11", "v26"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -26,8 +26,8 @@ def main() -> int:
     args = parse_args()
 
     models_blob = load_yaml(args.config)
-    if "yolov5" in models_blob:
-        model_cfg = models_blob.get("yolov5", {})
+    if "v5" in models_blob:
+        model_cfg = models_blob.get("v5", {})
         base_cfg = {k: v for k, v in models_blob.items() if k not in FAMILY_KEYS}
     else:
         model_cfg = models_blob
@@ -58,7 +58,7 @@ def main() -> int:
     weights = Path(cfg.get("model", "yolov5s.pt"))
     if not weights.is_absolute():
         weights = ROOT / weights
-    project = str(ROOT / "runs" / "yolov5")
+    project = str(ROOT / "runs" / "v5")
     name = now_tag()
 
     use_attention_flag = bool(cfg.pop("use_attention", False))

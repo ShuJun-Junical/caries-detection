@@ -15,8 +15,8 @@ set -euo pipefail
 ROOT_DIR="${SLURM_SUBMIT_DIR:-/home/junical/caries-detection}"
 VENV_DIR="${VENV_DIR:-$ROOT_DIR/.venv-ultra}"
 
-# Supported values: v8 | v11 | latest
-MODEL="${MODEL:-latest}"
+# Supported values: v8 | v11 | v26
+MODEL="${MODEL:-v26}"
 DEVICE="${DEVICE:-0}"
 SPLIT="${SPLIT:-test}"
 IMGSZ="${IMGSZ:-640}"
