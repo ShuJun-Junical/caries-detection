@@ -56,11 +56,8 @@ def main() -> int:
     weights = Path(cfg.get("model", "yolov5s.pt"))
     if not weights.is_absolute():
         weights = ROOT / weights
-    project = cfg.get("project", "runs/yolov5")
-    if not Path(project).is_absolute():
-        project = str(ROOT / project)
-
-    name = cfg.get("name") or f"caries-yolov5-{now_tag()}"
+    project = str(ROOT / "runs" / "yolov5")
+    name = now_tag()
 
     use_attention_flag = bool(cfg.pop("use_attention", False))
 

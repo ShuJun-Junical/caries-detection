@@ -6,6 +6,8 @@ import argparse
 from pathlib import Path
 
 from ultralytics import YOLO
+from ultralytics.models.yolo.detect.train import DetectionTrainer
+from ultralytics.utils import LOGGER
 
 from scripts.common.attention_utils import inject_cbam_attention
 from scripts.common.dataset_utils import ensure_standard_dataset_yaml
@@ -13,6 +15,62 @@ from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
 FAMILY_KEYS = {"yolov5", "yolov8", "yolov11", "latest"}
+
+
+def _count_cbam_modules(module) -> int:
+    return sum(1 for m in module.modules() if m.__class__.__name__ == "CBAM")
+
+
+def _count_attention_state_keys(module) -> int:
+    keys = module.state_dict().keys()
+    return sum(1 for k in keys if "channel_attention" in k or "spatial_attention" in k)
+
+
+def _build_attention_trainer(enable_attention: bool):
+    class AttentionTrainer(DetectionTrainer):
+        def get_model(self, cfg: str | None = None, weights=None, verbose: bool = True):
+            model = super().get_model(cfg=cfg, weights=weights, verbose=verbose)
+            if not enable_attention:
+                return model
+
+            if _count_cbam_modules(model) > 0:
+                return model
+
+            params_before = sum(p.numel() for p in model.parameters())
+            injected = inject_cbam_attention(model)
+            params_after = sum(p.numel() for p in model.parameters())
+            cbam_blocks = _count_cbam_modules(model)
+            attn_keys = _count_attention_state_keys(model)
+
+            if injected < 1 or cbam_blocks < 1 or attn_keys < 1 or params_after <= params_before:
+                raise RuntimeError(
+                    "CBAM injection validation failed in trainer.get_model(). "
+                    "Expected positive injected blocks, attention keys, and parameter delta."
+                )
+
+            LOGGER.info(
+                "Injected CBAM in trainer.get_model(): "
+                f"injected={injected}, cbam_blocks={cbam_blocks}, "
+                f"attention_keys={attn_keys}, delta_params={params_after - params_before}"
+            )
+            return model
+
+    return AttentionTrainer
+
+
+def _verify_attention_on_train_start(trainer) -> None:
+    model = trainer.model.module if hasattr(trainer.model, "module") else trainer.model
+    cbam_blocks = _count_cbam_modules(model)
+    attn_keys = _count_attention_state_keys(model)
+    if cbam_blocks < 1 or attn_keys < 1:
+        raise RuntimeError(
+            "CBAM verification failed at on_train_start: "
+            f"cbam_blocks={cbam_blocks}, attention_keys={attn_keys}"
+        )
+    LOGGER.info(
+        "Verified CBAM at on_train_start: "
+        f"cbam_blocks={cbam_blocks}, attention_keys={attn_keys}"
+    )
 
 
 def parse_args() -> argparse.Namespace:
@@ -45,13 +103,8 @@ def main() -> int:
 
     cfg["data"] = str(ensure_standard_dataset_yaml(cfg["data"]))
 
-    project = cfg.get("project", f"runs/{args.family}")
-    if not Path(project).is_absolute():
-        project = str(ROOT / project)
-    cfg["project"] = project
-
-    run_name = cfg.get("name") or f"caries-{args.family}-{now_tag()}"
-    cfg["name"] = run_name
+    cfg["project"] = str(ROOT / "runs" / args.family)
+    cfg["name"] = now_tag()
 
     if args.dry_run:
         print(cfg)
@@ -63,15 +116,11 @@ def main() -> int:
     if not model_path.is_absolute():
         model_path = ROOT / model_path
     model = YOLO(model_path)
+    trainer_cls = _build_attention_trainer(use_attention_flag)
     if use_attention_flag:
-        injected = inject_cbam_attention(model.model)
-        if injected < 1:
-            raise RuntimeError(
-                "Failed to inject attention blocks. Check model structure or disable use_attention in YAML."
-            )
-        print(f"Injected CBAM attention blocks: {injected}")
+        model.add_callback("on_train_start", _verify_attention_on_train_start)
 
-    model.train(**cfg)
+    model.train(trainer=trainer_cls, **cfg)
     return 0
 
 

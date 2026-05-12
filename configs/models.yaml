@@ -17,7 +17,7 @@ weight_decay: 0.0005
 # Runtime outputs
 cache: ram
 project: runs
-use_attention: true
+use_attention: false
 
 yolov5:
   model: checkpoints/yolov5s.pt

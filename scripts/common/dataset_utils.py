@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import hashlib
+import os
+import shutil
+import uuid
 from pathlib import Path
 from typing import Any
 
@@ -35,10 +38,18 @@ def _sync_tree(src_dir: Path, dst_dir: Path) -> None:
     for old_item in dst_dir.iterdir():
         if old_item.is_symlink() or old_item.is_file():
             old_item.unlink()
+        elif old_item.is_dir():
+            shutil.rmtree(old_item)
 
     for item in src_dir.iterdir():
         if item.is_file():
-            (dst_dir / item.name).symlink_to(item)
+            dst_item = dst_dir / item.name
+            if dst_item.exists() or dst_item.is_symlink():
+                if dst_item.is_dir() and not dst_item.is_symlink():
+                    shutil.rmtree(dst_item)
+                else:
+                    dst_item.unlink()
+            dst_item.symlink_to(item)
 
 
 def ensure_standard_dataset_yaml(data_yaml: str | Path, out_root: str | Path = "runs/tmp_data/datasets") -> Path:
@@ -54,7 +65,8 @@ def ensure_standard_dataset_yaml(data_yaml: str | Path, out_root: str | Path = "
         split_sources.append((src_images_dir, src_labels_dir))
 
     digest = hashlib.sha256(str(data_yaml_path).encode("utf-8")).hexdigest()[:12]
-    mirror_root = ensure_dir(out_root) / f"{data_yaml_path.stem}-{digest}"
+    run_token = os.environ.get("SLURM_JOB_ID") or f"pid{os.getpid()}-{uuid.uuid4().hex[:8]}"
+    mirror_root = ensure_dir(out_root) / f"{data_yaml_path.stem}-{digest}-{run_token}"
     mirror_root.mkdir(parents=True, exist_ok=True)
 
     for split, (src_images_dir, src_labels_dir) in zip(("train", "val", "test"), split_sources, strict=True):
