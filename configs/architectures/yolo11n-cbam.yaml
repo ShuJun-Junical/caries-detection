@@ -1,0 +1,44 @@
+# Declarative YOLO11n-CBAM detection model.
+# Based on Ultralytics yolo11n with CBAM blocks inserted after the first
+# four backbone feature blocks that were previously patched at runtime.
+
+nc: 80
+scale: n
+scales:
+  n: [0.50, 0.25, 1024]
+
+backbone:
+  - [-1, 1, Conv, [64, 3, 2]]
+  - [-1, 1, Conv, [128, 3, 2]]
+  - [-1, 2, C3k2, [256, False, 0.25]]
+  - [-1, 1, CBAM, [64]]
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [-1, 2, C3k2, [512, False, 0.25]]
+  - [-1, 1, CBAM, [128]]
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [-1, 2, C3k2, [512, True]]
+  - [-1, 1, CBAM, [128]]
+  - [-1, 1, Conv, [1024, 3, 2]]
+  - [-1, 2, C3k2, [1024, True]]
+  - [-1, 1, CBAM, [256]]
+  - [-1, 1, SPPF, [1024, 5]]
+  - [-1, 2, C2PSA, [1024]]
+
+head:
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 9], 1, Concat, [1]]
+  - [-1, 2, C3k2, [512, False]]
+
+  - [-1, 1, nn.Upsample, [None, 2, "nearest"]]
+  - [[-1, 6], 1, Concat, [1]]
+  - [-1, 2, C3k2, [256, False]]
+
+  - [-1, 1, Conv, [256, 3, 2]]
+  - [[-1, 17], 1, Concat, [1]]
+  - [-1, 2, C3k2, [512, False]]
+
+  - [-1, 1, Conv, [512, 3, 2]]
+  - [[-1, 14], 1, Concat, [1]]
+  - [-1, 2, C3k2, [1024, True]]
+
+  - [[20, 23, 26], 1, Detect, [nc]]

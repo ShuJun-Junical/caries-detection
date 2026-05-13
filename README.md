@@ -97,8 +97,9 @@ Training hyperparameters now live only in `configs/models.yaml`. The direct trai
 | lr0 | configs/models.yaml | Learning-rate base value from config only. |
 | weight_decay | configs/models.yaml | Optimization hyperparameter from config only. |
 | cache | configs/models.yaml | Passed to train pipeline from config only. |
-| use_attention | configs/models.yaml | Enables CBAM injection (Ultralytics) or transformer cfg (YOLOv5). |
-| model | configs/models.yaml family section | Family checkpoint path. |
+| use_attention | configs/models.yaml | Switches to the attention variant for each family. Ultralytics families use YAML-declared CBAM architectures; YOLOv5 uses the transformer cfg. |
+| model | configs/models.yaml family section | Family base checkpoint path. |
+| attention_model | configs/models.yaml family section | Family-specific attention architecture YAML used when `use_attention: true`. |
 | data | configs/models.yaml family section | Family dataset YAML path. |
 | project | configs/models.yaml family section | Output root for timestamped runs. |
 | amp | configs/models.yaml family section | Family-specific Ultralytics option. |
@@ -116,12 +117,12 @@ python -m scripts.train.train_yolov5 --device 0 --workers 8
 python -m scripts.train.run_all --targets v5 v8 v11 v26 --device 0 --workers 8
 ```
 
-Set `use_attention: true` in `configs/models.yaml` if you want attention enabled. For two-class training, point the family entry at `dataset/caries_only/data.caries_only.generated.yaml` after regenerating that dataset view.
+Set `use_attention: true` in `configs/models.yaml` if you want attention enabled. Ultralytics families select YAML-declared CBAM architectures and load the standard pretrained weights into those structures. YOLOv5 selects a YAML-declared CBAM variant and lets upstream YOLOv5 transfer matching `yolov5s.pt` weights. For two-class training, point the family entry at `dataset/caries_only/data.caries_only.generated.yaml` after regenerating that dataset view.
 
 Attention behavior by family:
 
-- Ultralytics (v8/v11/v26; v26 uses official YOLO26 weights): inject CBAM attention blocks before training.
-- YOLOv5: switch to upstream `yolov5s-transformer.yaml` (C3TR) architecture.
+- Ultralytics (v8/v11/v26; v26 uses official YOLO26 weights): load a family-specific CBAM model YAML declared under `configs/architectures/`, then transfer compatible pretrained weights from the base checkpoint.
+- YOLOv5: switch to the project-local `configs/architectures/yolov5s-cbam.yaml` variant, which replaces selected `C3` blocks with `C3CBAM` while still reusing upstream `yolov5s.pt` weights.
 
 ### Smoke Run (all families)
 

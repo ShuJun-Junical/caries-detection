@@ -6,10 +6,26 @@ import argparse
 import subprocess
 from pathlib import Path
 
+import yaml
+
 from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
 FAMILY_KEYS = {"v5", "v8", "v11", "v26"}
+
+
+def _write_yolov5_data_yaml(data_path: Path, output_dir: Path) -> Path:
+    data_cfg = load_yaml(data_path)
+    dataset_root = Path(data_cfg.get("path", ""))
+    if not dataset_root.is_absolute():
+        dataset_root = ROOT / dataset_root
+    data_cfg["path"] = str(dataset_root.resolve())
+
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"{data_path.stem}.yolov5.yaml"
+    with output_path.open("w", encoding="utf-8") as f:
+        yaml.safe_dump(data_cfg, f, sort_keys=False)
+    return output_path
 
 
 def parse_args() -> argparse.Namespace:
@@ -61,8 +77,10 @@ def main() -> int:
         project_path = ROOT / project_path
     project = str(project_path)
     name = now_tag()
+    cfg["data"] = str(_write_yolov5_data_yaml(data_path, project_path))
 
     use_attention_flag = bool(cfg.pop("use_attention", False))
+    attention_model = cfg.pop("attention_model", None)
 
     cmd = [
         "python",
@@ -91,12 +109,16 @@ def main() -> int:
         cmd.append("--cache")
 
     if use_attention_flag:
-        transformer_cfg = yolov5_dir / "models" / "hub" / "yolov5s-transformer.yaml"
-        if not transformer_cfg.exists():
+        if not attention_model:
+            raise ValueError("Missing attention_model for family v5 while use_attention=true")
+        attention_cfg = Path(attention_model)
+        if not attention_cfg.is_absolute():
+            attention_cfg = ROOT / attention_cfg
+        if not attention_cfg.exists():
             raise FileNotFoundError(
-                f"Attention config not found at {transformer_cfg}. Ensure YOLOv5 repo is complete."
+                f"Attention config not found at {attention_cfg}."
             )
-        cmd.extend(["--cfg", str(transformer_cfg)])
+        cmd.extend(["--cfg", str(attention_cfg)])
 
     print(" ".join(cmd))
     if args.dry_run:

@@ -3,72 +3,71 @@ from __future__ import annotations
 """Train Ultralytics detector families (v8/v11/v26) from unified YAML config."""
 
 import argparse
+import os
 from pathlib import Path
 
 from ultralytics import YOLO
-from ultralytics.models.yolo.detect.train import DetectionTrainer
 from ultralytics.utils import LOGGER
 
-from scripts.common.attention_utils import inject_cbam_attention
+from scripts.common.attention_utils import (
+    count_attention_state_keys,
+    count_cbam_modules,
+    register_ultralytics_cbam,
+)
 from scripts.common.io_utils import ROOT, load_yaml, merge_dicts, now_tag
 
 MODELS_CFG_PATH = "configs/models.yaml"
 FAMILY_KEYS = {"v5", "v8", "v11", "v26"}
 
 
-def _count_cbam_modules(module) -> int:
-    return sum(1 for m in module.modules() if m.__class__.__name__ == "CBAM")
+def _resolve_path(value: str | os.PathLike[str]) -> Path:
+    path = Path(value)
+    if not path.is_absolute():
+        path = ROOT / path
+    return path
 
 
-def _count_attention_state_keys(module) -> int:
-    keys = module.state_dict().keys()
-    return sum(1 for k in keys if "channel_attention" in k or "spatial_attention" in k)
-
-
-def _build_attention_trainer(enable_attention: bool):
-    class AttentionTrainer(DetectionTrainer):
-        def get_model(self, cfg: str | None = None, weights=None, verbose: bool = True):
-            model = super().get_model(cfg=cfg, weights=weights, verbose=verbose)
-            if not enable_attention:
-                return model
-
-            if _count_cbam_modules(model) > 0:
-                return model
-
-            params_before = sum(p.numel() for p in model.parameters())
-            injected = inject_cbam_attention(model)
-            params_after = sum(p.numel() for p in model.parameters())
-            cbam_blocks = _count_cbam_modules(model)
-            attn_keys = _count_attention_state_keys(model)
-
-            if injected < 1 or cbam_blocks < 1 or attn_keys < 1 or params_after <= params_before:
-                raise RuntimeError(
-                    "CBAM injection validation failed in trainer.get_model(). "
-                    "Expected positive injected blocks, attention keys, and parameter delta."
-                )
-
-            LOGGER.info(
-                "Injected CBAM in trainer.get_model(): "
-                f"injected={injected}, cbam_blocks={cbam_blocks}, "
-                f"attention_keys={attn_keys}, delta_params={params_after - params_before}"
-            )
-            return model
-
-    return AttentionTrainer
-
-
-def _verify_attention_on_train_start(trainer) -> None:
-    model = trainer.model.module if hasattr(trainer.model, "module") else trainer.model
-    cbam_blocks = _count_cbam_modules(model)
-    attn_keys = _count_attention_state_keys(model)
+def _verify_attention_model(model: YOLO) -> None:
+    cbam_blocks = count_cbam_modules(model.model)
+    attn_keys = count_attention_state_keys(model.model)
     if cbam_blocks < 1 or attn_keys < 1:
         raise RuntimeError(
-            "CBAM verification failed at on_train_start: "
+            "CBAM verification failed for YAML-declared attention model: "
             f"cbam_blocks={cbam_blocks}, attention_keys={attn_keys}"
         )
     LOGGER.info(
-        "Verified CBAM at on_train_start: "
+        "Verified YAML-declared CBAM model: "
         f"cbam_blocks={cbam_blocks}, attention_keys={attn_keys}"
+    )
+
+
+def _load_attention_weights(model: YOLO, base_weights_path: Path) -> None:
+    base_model = YOLO(base_weights_path)
+    target_layers = [layer for layer in model.model.model if layer.__class__.__name__ != "CBAM"]
+    source_layers = list(base_model.model.model)
+
+    if len(target_layers) != len(source_layers):
+        raise RuntimeError(
+            "Attention weight transfer failed: non-CBAM layer count does not match base model "
+            f"({len(target_layers)} != {len(source_layers)})"
+        )
+
+    loaded_tensors = 0
+    total_tensors = 0
+    for target_layer, source_layer in zip(target_layers, source_layers, strict=True):
+        source_state = source_layer.state_dict()
+        incompatible = target_layer.load_state_dict(source_state, strict=False)
+        if incompatible.unexpected_keys:
+            raise RuntimeError(
+                "Attention weight transfer hit unexpected keys: "
+                f"{incompatible.unexpected_keys}"
+            )
+        total_tensors += len(source_state)
+        loaded_tensors += len(source_state) - len(incompatible.missing_keys)
+
+    LOGGER.info(
+        "Transferred pretrained tensors into YAML-declared CBAM model: "
+        f"{loaded_tensors}/{total_tensors}"
     )
 
 
@@ -115,16 +114,30 @@ def main() -> int:
         return 0
 
     use_attention_flag = bool(cfg.pop("use_attention", False))
+    configured_model = cfg.pop("model")
+    attention_model = cfg.pop("attention_model", None)
+    resume_from = os.environ.get("RESUME_FROM")
 
-    model_path = Path(cfg.pop("model"))
-    if not model_path.is_absolute():
-        model_path = ROOT / model_path
-    model = YOLO(model_path)
-    trainer_cls = _build_attention_trainer(use_attention_flag)
     if use_attention_flag:
-        model.add_callback("on_train_start", _verify_attention_on_train_start)
+        register_ultralytics_cbam()
 
-    model.train(trainer=trainer_cls, **cfg)
+    model_path = _resolve_path(resume_from if resume_from else configured_model)
+    if resume_from:
+        cfg["resume"] = True
+        model = YOLO(model_path)
+        if use_attention_flag:
+            _verify_attention_model(model)
+    elif use_attention_flag:
+        if not attention_model:
+            raise ValueError(f"Missing attention_model for family {args.family} while use_attention=true")
+        attention_model_path = _resolve_path(attention_model)
+        model = YOLO(attention_model_path)
+        _load_attention_weights(model, model_path)
+        _verify_attention_model(model)
+    else:
+        model = YOLO(model_path)
+
+    model.train(**cfg)
     return 0
 
 

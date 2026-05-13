@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Iterable
-
 import torch
 import torch.nn as nn
 
@@ -52,61 +50,18 @@ class CBAM(nn.Module):
         x = self.spatial_attention(x) * x
         return x
 
+def register_ultralytics_cbam() -> None:
+    """Register project-local CBAM into Ultralytics' YAML parser namespace."""
+    from ultralytics.nn import tasks
 
-def _iter_named_children(module: nn.Module) -> Iterable[tuple[str, nn.Module]]:
-    for name, child in module.named_children():
-        yield name, child
-
-
-def _infer_out_channels(module: nn.Module) -> int | None:
-    if hasattr(module, "c2") and isinstance(module.c2, int):
-        return int(module.c2)
-
-    out_channels = getattr(module, "out_channels", None)
-    if isinstance(out_channels, int):
-        return out_channels
-
-    for attr_name in ("cv2", "cv3", "conv"):
-        attr = getattr(module, attr_name, None)
-        if attr is None:
-            continue
-        nested_out = getattr(attr, "out_channels", None)
-        if isinstance(nested_out, int):
-            return nested_out
-        if hasattr(attr, "conv"):
-            nested_conv_out = getattr(attr.conv, "out_channels", None)
-            if isinstance(nested_conv_out, int):
-                return nested_conv_out
-
-    return None
+    if getattr(tasks, "CBAM", None) is not CBAM:
+        tasks.CBAM = CBAM
 
 
-def inject_cbam_attention(model: nn.Module, max_blocks: int = 4) -> int:
-    """Inject CBAM after feature blocks and return how many blocks were patched."""
-    if max_blocks < 1:
-        raise ValueError("max_blocks must be >= 1")
+def count_cbam_modules(module: nn.Module) -> int:
+    return sum(1 for m in module.modules() if m.__class__.__name__ == "CBAM")
 
-    target_types = {"C2f", "C3", "C3k2", "BottleneckCSP"}
-    injected = 0
 
-    def patch(module: nn.Module) -> None:
-        nonlocal injected
-        if injected >= max_blocks:
-            return
-
-        for name, child in list(_iter_named_children(module)):
-            if injected >= max_blocks:
-                return
-
-            child_type = child.__class__.__name__
-            if child_type in target_types and not isinstance(child, nn.Sequential):
-                channels = _infer_out_channels(child)
-                if channels and channels > 0:
-                    setattr(module, name, nn.Sequential(child, CBAM(channels)))
-                    injected += 1
-                    continue
-
-            patch(child)
-
-    patch(model)
-    return injected
+def count_attention_state_keys(module: nn.Module) -> int:
+    keys = module.state_dict().keys()
+    return sum(1 for k in keys if "channel_attention" in k or "spatial_attention" in k)
