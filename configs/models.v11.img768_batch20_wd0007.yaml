@@ -1,0 +1,20 @@
+# v11 tuning variant: 768 input with batch 20 and slightly stronger weight decay.
+
+epochs: 100
+imgsz: 768
+batch: 20
+
+patience: 30
+optimizer: auto
+lr0: 0.01
+weight_decay: 0.0007
+
+cache: ram
+use_attention: false
+
+v11:
+  model: checkpoints/yolo11n.pt
+  attention_model: configs/architectures/yolo11n-cbam.yaml
+  data: configs/data.caries.yaml
+  project: runs/v11
+  amp: false

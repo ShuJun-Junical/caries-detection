@@ -1,5 +1,5 @@
-# Consolidated configuration file.
-
+# CBAM-enabled variant of the consolidated training config.
+# Keep this file separate so the default non-attention config stays untouched.
 
 # Shared training defaults (merged from hyp.base.yaml)
 epochs: 100
@@ -14,7 +14,7 @@ weight_decay: 0.0005
 
 # Runtime outputs
 cache: ram
-use_attention: false
+use_attention: true
 
 v5:
   model: checkpoints/yolov5s.pt

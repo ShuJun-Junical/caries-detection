@@ -109,6 +109,15 @@ def main() -> int:
     cfg["project"] = str(project_path)
     cfg["name"] = now_tag()
 
+    root_path = str(ROOT)
+    current_pythonpath = os.environ.get("PYTHONPATH")
+    if current_pythonpath:
+        paths = current_pythonpath.split(os.pathsep)
+        if root_path not in paths:
+            os.environ["PYTHONPATH"] = os.pathsep.join([root_path, current_pythonpath])
+    else:
+        os.environ["PYTHONPATH"] = root_path
+
     if args.dry_run:
         print(cfg)
         return 0
